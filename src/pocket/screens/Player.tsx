@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Device, type WheelZone } from '../components/Hardware';
+import { HomeLink } from '../components/HomeLink';
 import {
   LcdScreen,
   MENU_ITEMS,
@@ -263,12 +264,13 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
   return (
     <div className="pp-root pp-stage pp-player" style={finishVars(finish)}>
       <div className="mx-auto flex h-[100dvh] max-w-[480px] flex-col items-center overflow-hidden px-3">
-        <header className="flex h-12 w-full items-center justify-between px-2">
-          <span className="pp-spec" style={{ color: 'var(--ink-2)' }}>
+        <header className="grid h-12 w-full grid-cols-[1fr_auto_1fr] items-center gap-3 px-2">
+          <span className="pp-spec min-w-0 truncate" style={{ color: 'var(--ink-2)' }}>
             {demo ? 'Demo · ' : ''}
             {who} {whom}
           </span>
-          <span className="pp-spec" style={{ color: 'var(--ink-3)' }}>
+          <HomeLink />
+          <span className="pp-spec text-right" style={{ color: 'var(--ink-3)' }}>
             {total} faixas
           </span>
         </header>

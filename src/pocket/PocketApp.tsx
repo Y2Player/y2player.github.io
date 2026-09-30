@@ -4,6 +4,7 @@ import { decodeMixtape, decodeShort, DEMO, type Mixtape } from './lib/mixtape';
 import { PlayerScreen } from './screens/Player';
 import { Landing } from './screens/Landing';
 import { CreateWizard } from './screens/Create';
+import { HomeBar } from './components/HomeLink';
 
 // Páginas internas (decupagem e protótipo antigo) ficam fora do repositório público.
 // O glob só encontra os arquivos quando eles existem, então o build público não quebra.
@@ -76,7 +77,8 @@ function Broken() {
     document.title = 'Y2Player';
   }, []);
   return (
-    <div className="pp-root pp-stage grid place-items-center px-6 text-center">
+    <div className="pp-root pp-stage relative grid place-items-center px-6 text-center">
+      <HomeBar className="h-12" />
       <div>
         <p className="pp-spec" style={{ color: 'var(--ink-3)' }}>
           Erro 404
