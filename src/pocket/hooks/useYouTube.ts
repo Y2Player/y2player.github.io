@@ -63,7 +63,7 @@ export function useYouTube(host: RefObject<HTMLDivElement>, opts: Opts) {
       const el = document.createElement('div');
       host.current.appendChild(el);
       player.current = new w.YT.Player(el, {
-        width: 200,
+        width: 320,
         height: 200,
         playerVars: { playsinline: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, iv_load_policy: 3, modestbranding: 1 },
         events: {

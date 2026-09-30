@@ -805,17 +805,21 @@
   }
 }
 
-/* player do YouTube: fora da vista, mas "visível" pro navegador tocar */
+/* player do YouTube: fora da tela, mas em tamanho real e opaco.
+   Player minúsculo ou transparente é tratado como escondido (Safari pausa,
+   o YouTube pode recusar tocar), então ele fica inteiro, só que deslocado. */
 .pp-yt-host {
   position: fixed;
-  left: 0;
-  bottom: 0;
-  width: 2px;
-  height: 2px;
+  left: -9999px;
+  top: 0;
+  width: 320px;
+  height: 200px;
   overflow: hidden;
-  opacity: 0.01;
   pointer-events: none;
-  z-index: -1;
+}
+.pp-yt-host iframe {
+  width: 100%;
+  height: 100%;
 }
 
 /* wizard no celular: o aparelho aparece por trás da folha, só a cabeça e o visor */
