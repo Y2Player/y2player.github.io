@@ -1,4 +1,4 @@
-// Link para a home, sempre no topo e centralizado, no mesmo estilo das legendas do topo.
+// Link para a home, no rodapé, no mesmo estilo das legendas do cabeçalho.
 // Sublinhado para deixar claro que é link.
 export function HomeLink() {
   return (
@@ -8,10 +8,10 @@ export function HomeLink() {
   );
 }
 
-// Faixa do topo para telas que não têm cabeçalho próprio no centro da página.
+// Faixa do rodapé para telas que não têm rodapé próprio.
 export function HomeBar({ className = 'h-14' }: { className?: string }) {
   return (
-    <div className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-center ${className}`}>
+    <div className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-center ${className}`}>
       <span className="pointer-events-auto">
         <HomeLink />
       </span>

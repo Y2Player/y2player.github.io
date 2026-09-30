@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Device } from '../components/Hardware';
-import { HomeBar } from '../components/HomeLink';
 import { LcdScreen, MascotScene, ScreenList, ScreenNote, ScreenNow, ScreenSaved } from '../components/Lcd';
 import { useTicker } from '../hooks/useTicker';
 import { haptic } from '../lib/haptics';
@@ -213,8 +212,7 @@ export function CreateWizard() {
   );
 
   return (
-    <div className="pp-root pp-stage relative" style={finishVars(finish)}>
-      <HomeBar />
+    <div className="pp-root pp-stage" style={finishVars(finish)}>
       <div className="mx-auto max-w-[1080px] lg:grid lg:min-h-[100dvh] lg:grid-cols-[1fr_520px] lg:items-start lg:gap-16 lg:px-8">
         {/* aparelho */}
         <div className="lg:sticky lg:top-0 lg:flex lg:h-[100dvh] lg:flex-col">

@@ -264,13 +264,12 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
   return (
     <div className="pp-root pp-stage pp-player" style={finishVars(finish)}>
       <div className="mx-auto flex h-[100dvh] max-w-[480px] flex-col items-center overflow-hidden px-3">
-        <header className="grid h-12 w-full grid-cols-[1fr_auto_1fr] items-center gap-3 px-2">
+        <header className="flex h-12 w-full items-center justify-between gap-3 px-2">
           <span className="pp-spec min-w-0 truncate" style={{ color: 'var(--ink-2)' }}>
             {demo ? 'Demo · ' : ''}
             {who} {whom}
           </span>
-          <HomeLink />
-          <span className="pp-spec text-right" style={{ color: 'var(--ink-3)' }}>
+          <span className="pp-spec flex-none" style={{ color: 'var(--ink-3)' }}>
             {total} faixas
           </span>
         </header>
@@ -292,7 +291,9 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
           </div>
         </main>
 
-        <footer className="flex h-14 w-full items-center justify-center">
+        {/* rodapé espelha o cabeçalho: home à esquerda, convite à direita */}
+        <footer className="flex h-14 w-full items-center justify-between gap-3 px-2">
+          <HomeLink />
           <a href="#/criar" className="pp-spec underline-offset-4 hover:underline" style={{ color: 'var(--ink-2)' }}>
             Gostou? Faz a sua →
           </a>
