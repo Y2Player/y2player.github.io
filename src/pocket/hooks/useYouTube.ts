@@ -39,6 +39,8 @@ function loadApi() {
 export type YTStatus = 'loading' | 'idle' | 'buffering' | 'playing' | 'paused' | 'ended' | 'error';
 
 interface Opts {
+  // primeira faixa: o player já nasce com ela (como na referência), em vez de vazio
+  initialId?: string;
   onEnded?: () => void;
   onError?: (code: number) => void;
 }
@@ -65,7 +67,9 @@ export function useYouTube(host: RefObject<HTMLDivElement>, opts: Opts) {
       player.current = new w.YT.Player(el, {
         width: 320,
         height: 180,
-        playerVars: { playsinline: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, iv_load_policy: 3, modestbranding: 1 },
+        videoId: cbs.current.initialId,
+        // mesmos parâmetros da referência (mixtape-for-you) + playsinline para o iPhone
+        playerVars: { autoplay: 0, controls: 0, rel: 0, modestbranding: 1, playsinline: 1 },
         events: {
           onReady: () => {
             isReady.current = true;

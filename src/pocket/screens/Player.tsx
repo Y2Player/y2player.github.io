@@ -71,6 +71,7 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
   };
 
   const yt = useYouTube(host, {
+    initialId: mix.tracks[0]?.id,
     onEnded: () => {
       if (index < total - 1) startTrack(index + 1);
       else {
