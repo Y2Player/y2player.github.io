@@ -812,8 +812,10 @@
   position: fixed;
   left: -9999px;
   top: 0;
+  /* 320×180, igual à referência (mixtape-for-you), que toca sem anúncio.
+     Fica abaixo do mínimo de 200×200 pedido pelo YouTube: se ele reclamar, voltar para 200. */
   width: 320px;
-  height: 200px;
+  height: 180px;
   overflow: hidden;
   pointer-events: none;
 }
