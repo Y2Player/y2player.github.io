@@ -1,0 +1,826 @@
+/* ─────────────────────────────────────────────────────────────
+   Mixtape Pocket Player — materiais
+   Tudo dentro do aparelho é medido em cqw (largura do aparelho),
+   então o objeto escala inteiro, como um produto físico.
+   ───────────────────────────────────────────────────────────── */
+
+.pp-root {
+  --ink: #1d1d1b;
+  --ink-2: #6b6862;
+  --ink-3: #a19d95;
+  --paper: #f6f5f1;
+  --paper-2: #efede7;
+  --line: rgba(29, 29, 27, 0.12);
+  --signal: #ff5a1f;
+  --ink-contrast: #f6f5f1;
+  --stage-bg: #e6e6e6;
+  color-scheme: light dark;
+  /* Helvetica Neue em tudo fora do visor (o LCD tem as fontes de pixel dele) */
+  --font-ui: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: var(--font-ui);
+  color: var(--ink);
+  background: var(--stage-bg);
+  min-height: 100dvh;
+  -webkit-tap-highlight-color: transparent;
+  letter-spacing: 0;
+}
+
+.pp-spec {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Fundo e tinta da página acompanham o tema do sistema (claro/escuro).
+   O aparelho não muda: é um objeto, tem a cor dele. */
+@media (prefers-color-scheme: dark) {
+  .pp-root {
+    --ink: #edece8;
+    --ink-2: #a8a6a0;
+    --ink-3: #6f6d69;
+    --paper: #1f2023;
+    --paper-2: #27282c;
+    --line: rgba(255, 255, 255, 0.12);
+    --ink-contrast: #141416;
+    --stage-bg: #141416;
+  }
+}
+
+/* ─── Container do aparelho ─────────────────────────────────── */
+.pp-cq {
+  container-type: inline-size;
+  width: 100%;
+}
+
+/* ─── Borda liquid glass ──────────────────────────────────────
+   Aro fino e translúcido: brilho especular no alto à esquerda,
+   quase some no meio, reacende embaixo à direita. Um só padrão
+   para aparelho, visor e controles. */
+.pp-device::before,
+.pp-glass::before,
+.pp-wheel::after,
+.pp-center::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+  padding: var(--rim, 0.5cqw);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.4) 20%,
+    rgba(255, 255, 255, 0.06) 48%,
+    rgba(255, 255, 255, 0.28) 78%,
+    rgba(255, 255, 255, 0.8) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+.pp-device::before {
+  /* aro do corpo: fio fino e discreto, só um reflexo na aresta */
+  --rim: 0.28cqw;
+  opacity: 0.55;
+}
+.pp-center::before {
+  --rim: 0.4cqw;
+}
+
+/* Casca: segura o corpo e as teclas laterais que saem de baixo dele. */
+.pp-shell {
+  position: relative;
+  width: 100cqw;
+  /* um só material leitoso para roda e teclas */
+  --ctrl-surface: var(--wheel);
+}
+
+/* Corpo do aparelho: um bloco retangular de plástico, sem sombra projetada.
+   O volume vem só do brilho e da borda iluminada, não de sombra na página. */
+.pp-device {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  z-index: 1;
+  width: 100cqw;
+  padding: 5.5cqw 5.5cqw 7cqw;
+  border-radius: 7cqw;
+  color: var(--engrave);
+  font-family: var(--font-ui);
+  /* degradê leve do plástico: luz no alto à esquerda, assenta embaixo à direita */
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, var(--brush, 0)) 0 1px, rgba(0, 0, 0, var(--brush, 0)) 1px 3px),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--body-hi) 45%, var(--body)) 0%,
+      var(--body) 48%,
+      color-mix(in srgb, var(--body-lo) 30%, var(--body)) 100%
+    );
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04);
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* grão do policarbonato */
+.pp-device::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.2;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.pp-engrave {
+  font-size: 2.2cqw;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--engrave);
+  text-shadow: 0 0.15cqw 0 var(--engrave-shadow);
+  white-space: nowrap;
+}
+
+/* ─── Moldura + visor ───────────────────────────────────────── */
+.pp-bezel {
+  position: relative;
+  border-radius: 5cqw;
+}
+.pp-glass {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(118deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 34%, transparent 34.2%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 30%);
+}
+
+.pp-lcd {
+  position: relative;
+  aspect-ratio: 100 / 82;
+  border-radius: inherit;
+  overflow: hidden;
+  padding: 4cqw 5.4cqw 4.4cqw;
+  color: var(--lcd-ink);
+  background: var(--lcd-bg);
+  font-family: 'Press Start 2P', monospace;
+  box-shadow: inset 0 0.6cqw 1.4cqw rgba(0, 0, 0, 0.2);
+  transition: background-color 250ms ease, box-shadow 250ms ease;
+  display: flex;
+  flex-direction: column;
+}
+.pp-lcd.is-lit {
+  background: var(--lcd-bg-lit);
+  box-shadow:
+    inset 0 0.6cqw 1.4cqw rgba(0, 0, 0, 0.14),
+    inset 0 0 12cqw color-mix(in srgb, var(--lcd-bg-lit) 60%, #fff 40%);
+}
+/* sombra dos pixels no fundo do LCD (profundidade do cristal líquido) */
+.pp-px-shadow {
+  opacity: 0.16;
+}
+/* no OLED escuro não existe sombra projetada */
+.pp-lcd.is-oled .pp-px-shadow {
+  opacity: 0;
+}
+.pp-lcd.is-oled .pp-px-full {
+  filter: drop-shadow(0 0 0.25px currentColor);
+}
+
+.pp-lcd-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 2.1cqw;
+  line-height: 1;
+  height: 3.2cqw;
+  flex: none;
+}
+.pp-lcd-status > span {
+  display: flex;
+  align-items: center;
+  gap: 1.2cqw;
+}
+.pp-lcd-rule {
+  height: 0.35cqw;
+  background: currentColor;
+  opacity: 0.18;
+  margin: 1.8cqw 0 1.6cqw;
+  flex: none;
+}
+/* Tocando agora: coluna única de 88% (bichinho, faixa e progresso alinhados),
+   escala de respiro em passos de 1.2cqw, vão de seção = 2× o vão interno. */
+.pp-now {
+  --s1: 1.2cqw;
+  --s2: 2.4cqw;
+  flex: 1;
+  min-height: 0;
+  width: 88%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+.pp-gap {
+  flex: 1 1 0;
+  min-height: var(--s1);
+}
+.pp-gap.is-section {
+  flex-grow: 2;
+  min-height: var(--s2);
+}
+.pp-now__meta {
+  text-align: center;
+  flex: none;
+}
+.pp-now__meta .pp-lcd-sub {
+  margin-top: var(--s1);
+}
+.pp-now .pp-progress {
+  margin-top: 0;
+  padding-top: 0;
+}
+.pp-transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8cqw;
+  flex: none;
+}
+.pp-lcd-title {
+  font-size: 2.8cqw;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  flex: none;
+}
+.pp-lcd-sub {
+  font-size: 1.9cqw;
+  line-height: 1.3;
+  opacity: 0.62;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 0.8cqw;
+  flex: none;
+}
+.pp-marquee {
+  display: inline-flex;
+  gap: 8cqw;
+  animation: pp-marquee var(--dur, 10s) steps(var(--steps, 120)) infinite;
+  will-change: transform;
+}
+@keyframes pp-marquee {
+  0%,
+  12% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-50% - 4cqw));
+  }
+}
+.pp-blink {
+  animation: pp-blink 1s steps(1) infinite;
+}
+@keyframes pp-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.pp-progress {
+  display: flex;
+  align-items: center;
+  gap: 1.4cqw;
+  font-size: 1.9cqw;
+  margin-top: auto;
+  padding-top: 2cqw;
+  flex: none;
+}
+.pp-progress__bar {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(32, 1fr);
+  gap: 0.35cqw;
+  height: 1.8cqw;
+}
+.pp-progress__bar i {
+  background: currentColor;
+  opacity: 0.14;
+}
+.pp-progress__bar i.on {
+  opacity: 1;
+}
+.pp-progress__bar i.head {
+  opacity: 1;
+  transform: scaleY(1.6);
+}
+
+.pp-lcd-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5cqw;
+  font-size: 2.3cqw;
+  line-height: 1;
+}
+.pp-lcd-list li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.8cqw;
+  padding: 1.9cqw 1.4cqw;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.pp-lcd-list li.is-cursor {
+  background: var(--lcd-ink);
+  color: var(--lcd-bg);
+}
+.pp-lcd.is-lit .pp-lcd-list li.is-cursor {
+  color: var(--lcd-bg-lit);
+}
+.pp-lcd-menu {
+  font-size: 2.8cqw;
+  gap: 1cqw;
+  margin-top: 1cqw;
+}
+.pp-lcd-menu li {
+  padding: 2.8cqw 1.8cqw;
+}
+.pp-lcd-list li .t {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 0 1 auto;
+}
+/* lista de faixas: alinhada à esquerda, o título ocupa a linha toda
+   (o menu segue centralizado) */
+.pp-lcd-list:not(.pp-lcd-menu) li {
+  justify-content: flex-start;
+}
+.pp-lcd-list:not(.pp-lcd-menu) li .t {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.pp-note {
+  text-align: center;
+  font-family: 'VT323', monospace;
+  font-size: 5.2cqw;
+  line-height: 1.05;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.pp-lcd-overlay {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 38%;
+  padding: 2.4cqw 2.6cqw;
+  background: var(--lcd-bg);
+  border: 0.5cqw solid currentColor;
+  box-shadow: 0.8cqw 0.8cqw 0 color-mix(in srgb, currentColor 25%, transparent);
+  font-size: 2.2cqw;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6cqw;
+  z-index: 3;
+}
+.pp-lcd.is-lit .pp-lcd-overlay {
+  background: var(--lcd-bg-lit);
+}
+.pp-seg {
+  display: grid;
+  grid-template-columns: repeat(20, 1fr);
+  gap: 0.4cqw;
+  height: 2.2cqw;
+}
+.pp-seg i {
+  background: currentColor;
+  opacity: 0.15;
+}
+.pp-seg i.on {
+  opacity: 1;
+}
+
+/* ─── Deck ──────────────────────────────────────────────────── */
+/* só a roda, no eixo do aparelho: volume e luz foram para as bordas */
+.pp-deck {
+  display: flex;
+  justify-content: center;
+  margin-top: 7cqw;
+}
+
+/* ─── Click-wheel ───────────────────────────────────────────── */
+.pp-wheel {
+  position: relative;
+  width: 62cqw;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  touch-action: none;
+  perspective: 60cqw;
+  cursor: grab;
+}
+.pp-wheel:active {
+  cursor: grabbing;
+}
+/* disco leitoso — mesmo material do knob e da chave */
+.pp-wheel__disc {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--ctrl-surface);
+  transition: transform 110ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-style: preserve-3d;
+}
+.pp-wheel[data-press='menu'] .pp-wheel__disc {
+  transform: rotateX(4deg) translateZ(-0.4cqw);
+}
+.pp-wheel[data-press='back'] .pp-wheel__disc {
+  transform: rotateX(-4deg) translateZ(-0.4cqw);
+}
+.pp-wheel[data-press='prev'] .pp-wheel__disc {
+  transform: rotateY(-4deg) translateZ(-0.4cqw);
+}
+.pp-wheel[data-press='next'] .pp-wheel__disc {
+  transform: rotateY(4deg) translateZ(-0.4cqw);
+}
+.pp-wheel__shade {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 90ms;
+  background: conic-gradient(from var(--za, 0deg), rgba(0, 0, 0, 0.09) 0 90deg, transparent 90deg);
+  -webkit-mask: radial-gradient(circle, transparent 38%, #000 39%);
+  mask: radial-gradient(circle, transparent 38%, #000 39%);
+}
+.pp-wheel[data-press] .pp-wheel__shade {
+  opacity: 1;
+}
+.pp-wheel[data-press='menu'] {
+  --za: -45deg;
+}
+.pp-wheel[data-press='next'] {
+  --za: 45deg;
+}
+.pp-wheel[data-press='back'] {
+  --za: 135deg;
+}
+.pp-wheel[data-press='prev'] {
+  --za: 225deg;
+}
+.pp-wheel__ticks {
+  position: absolute;
+  inset: 1.6cqw;
+  border-radius: 50%;
+  background: repeating-conic-gradient(var(--key-ink) 0 0.9deg, transparent 0.9deg 7.5deg);
+  -webkit-mask: radial-gradient(circle, transparent 90%, #000 90.5%, #000 95%, transparent 95.5%);
+  mask: radial-gradient(circle, transparent 90%, #000 90.5%, #000 95%, transparent 95.5%);
+  opacity: 0.32;
+  transform: rotate(var(--rot, 0deg));
+}
+.pp-wheel__label {
+  position: absolute;
+  color: var(--key-ink);
+  font-size: 2.4cqw;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  width: 12cqw;
+  height: 9cqw;
+  margin: -4.5cqw 0 0 -6cqw;
+  pointer-events: auto;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: inherit;
+  text-shadow: 0 0.15cqw 0 rgba(255, 255, 255, 0.45);
+}
+.pp-wheel__label svg {
+  width: 4.2cqw;
+  height: 4.2cqw;
+}
+.pp-wheel__label:focus-visible,
+.pp-center:focus-visible,
+.pp-key:focus-visible,
+.pp-sidekey:focus-visible {
+  outline: 0.6cqw solid var(--led);
+  outline-offset: 0.6cqw;
+}
+
+/* botão central — convexo, cor de sinal */
+.pp-center-seat {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22cqw;
+  height: 22cqw;
+  margin: -11cqw 0 0 -11cqw;
+  border-radius: 50%;
+}
+.pp-center {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--accent-ink);
+  background: var(--accent);
+  box-shadow: 0 0.45cqw 0 var(--accent-lo);
+  transition: transform 80ms ease, box-shadow 80ms ease;
+  cursor: pointer;
+}
+.pp-center svg {
+  position: relative;
+  z-index: 1;
+  width: 6.4cqw;
+  height: 6.4cqw;
+}
+.pp-center:active,
+.pp-center.is-down {
+  transform: translateY(0.4cqw);
+  box-shadow: 0 0.05cqw 0 var(--accent-lo);
+}
+
+/* ─── Teclas laterais ──────────────────────────────────────────
+   Saem de baixo da casca (z-index abaixo do corpo) e afundam ao apertar.
+   A área de toque se estende para fora, a tecla visível é fina. */
+.pp-sidekey {
+  position: relative;
+  width: 2.6cqw;
+  height: 13cqw;
+  border: 0;
+  padding: 0;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.1), transparent 45%, rgba(255, 255, 255, 0.35)), var(--ctrl-surface);
+  cursor: pointer;
+  touch-action: none;
+  transition: transform 90ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.pp-sidekey.is-left {
+  border-radius: 1.2cqw 0 0 1.2cqw;
+}
+.pp-sidekey.is-right {
+  border-radius: 0 1.2cqw 1.2cqw 0;
+  background: linear-gradient(270deg, rgba(0, 0, 0, 0.1), transparent 45%, rgba(255, 255, 255, 0.35)), var(--ctrl-surface);
+}
+.pp-sidekey::after {
+  content: '';
+  position: absolute;
+  top: -1.5cqw;
+  bottom: -1.5cqw;
+  width: 7cqw;
+}
+.pp-sidekey.is-left::after {
+  right: 0;
+}
+.pp-sidekey.is-right::after {
+  left: 0;
+}
+.pp-shell > .pp-sidekey {
+  position: absolute;
+  z-index: 0;
+}
+.pp-shell > .pp-sidekey.is-left {
+  left: -1.3cqw;
+}
+.pp-shell > .pp-sidekey.is-right {
+  right: -1.3cqw;
+}
+.pp-sidekey.is-left.is-down {
+  transform: translateX(0.8cqw);
+}
+.pp-sidekey.is-right.is-down {
+  transform: translateX(-0.8cqw);
+}
+
+/* ─── Página ────────────────────────────────────────────────── */
+/* player: a página inteira cabe na tela, sem rolagem */
+.pp-player {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+/* proporção do aparelho ≈ 1:1.56; 132px = cabeçalho + dica + rodapé */
+.pp-player-device {
+  width: min(calc(100vw - 24px), 420px, calc((100dvh - 132px) / 1.6));
+}
+/* na web o aparelho fica menor que no celular (~20% abaixo dos 420px) */
+@media (min-width: 768px) {
+  .pp-player-device {
+    width: min(338px, calc((100dvh - 132px) / 1.56));
+  }
+}
+
+/* chão neutro e chapado: sem vinheta nem luz de estúdio */
+.pp-stage {
+  background: var(--stage-bg);
+}
+
+.pp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 26px;
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  background: var(--ink);
+  color: var(--ink-contrast);
+  border: 0;
+  cursor: pointer;
+  transition: transform 120ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 120ms, background 200ms;
+  -webkit-tap-highlight-color: transparent;
+}
+.pp-btn:active {
+  transform: scale(0.97);
+}
+.pp-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+}
+.pp-btn.is-signal {
+  background: var(--signal);
+  color: #fff;
+}
+.pp-btn.is-ghost {
+  background: transparent;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+
+.pp-field {
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 14px 16px;
+  font-family: var(--font-ui);
+  font-size: 16px;
+  color: var(--ink);
+  outline: none;
+  transition: box-shadow 150ms;
+}
+.pp-field::placeholder {
+  color: var(--ink-3);
+}
+.pp-field:focus {
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+}
+
+/* pop-up do bilhete no player: papel por cima do aparelho */
+.pp-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--stage-bg) 72%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.pp-modal__card {
+  width: min(100%, 400px);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: 24px;
+}
+.pp-sheet.pp-modal__card {
+  border-radius: 24px;
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+/* a folha do formulário é papel: herda a tinta do tema da página */
+.pp-sheet {
+  color: var(--ink);
+  background: var(--paper);
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -1px 0 var(--line), 0 -20px 50px -20px rgba(0, 0, 0, 0.18);
+}
+@media (min-width: 900px) {
+  .pp-sheet {
+    border-radius: 28px;
+    box-shadow: 0 0 0 1px var(--line), 0 30px 60px -30px rgba(0, 0, 0, 0.25);
+  }
+}
+
+.pp-chip {
+  border: 0;
+  background: var(--paper-2);
+  border-radius: 18px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  cursor: pointer;
+  transition: box-shadow 150ms, transform 120ms, background 150ms;
+  text-align: left;
+  color: var(--ink);
+}
+.pp-chip:active {
+  transform: scale(0.98);
+}
+.pp-chip.is-on {
+  box-shadow: inset 0 0 0 2px var(--ink);
+  background: var(--paper);
+}
+
+.pp-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.pp-steps i {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--line);
+  transition: background 300ms;
+}
+.pp-steps i.on {
+  background: var(--ink);
+}
+
+.pp-status-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--ink-3);
+  opacity: 0.4;
+}
+.pp-status-led.ok {
+  background: #2fb35a;
+  opacity: 1;
+  box-shadow: 0 0 6px #2fb35a;
+}
+.pp-status-led.load {
+  background: #f2a61c;
+  opacity: 1;
+  animation: pp-blink 0.6s steps(1) infinite;
+}
+.pp-status-led.err {
+  background: #ff3b30;
+  opacity: 1;
+  box-shadow: 0 0 6px #ff3b30;
+}
+
+.pp-fade-in {
+  animation: pp-fade 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes pp-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* aparelho "pousando" na mesa ao abrir o link */
+.pp-arrive {
+  animation: pp-arrive 500ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes pp-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pp-marquee,
+  .pp-arrive,
+  .pp-fade-in {
+    animation: none;
+  }
+}
+
+/* player do YouTube: fora da vista, mas "visível" pro navegador tocar */
+.pp-yt-host {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 2px;
+  height: 2px;
+  overflow: hidden;
+  opacity: 0.01;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* wizard no celular: o aparelho aparece por trás da folha, só a cabeça e o visor */
+@media (max-width: 1023px) {
+  .pp-peek {
+    height: calc(min(100vw - 88px, 380px) * 0.98);
+  }
+}

@@ -1,0 +1,23 @@
+# dependências e build
+node_modules/
+dist/
+.DS_Store
+.claude/
+
+# material interno: fica só no computador, fora do repositório público
+refs/
+human-output/
+docs/production/
+/*.png
+public/audio/
+public/refs/
+
+# protótipo antigo, vitrine de design system e página de decupagem
+src/App.tsx
+src/design-system/
+src/components/
+src/lib/
+src/pocket/screens/Assets.tsx
+
+# registro interno de decisões de copy
+docs/

@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.015em;
+  }
+}
+
+@layer utilities {
+  /* CRT Scanlines effect */
+  .crt-scanlines {
+    background: linear-gradient(
+      rgba(18, 16, 16, 0) 50%, 
+      rgba(0, 0, 0, 0.4) 50%
+    ), linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.04),
+      rgba(0, 255, 0, 0.02),
+      rgba(0, 255, 0, 0.04)
+    );
+    background-size: 100% 3px, 3px 100%;
+  }
+
+  /* Tactile Apple-style button press (no bump, fluid scale) */
+  .tactile-btn {
+    transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), opacity 120ms ease, background-color 120ms ease;
+  }
+  .tactile-btn:active {
+    transform: scale(0.97);
+  }
+
+  /* Hardware device drop shadow (Clean, refined ambient blur) */
+  .device-hardware-shadow {
+    box-shadow: 
+      0 30px 60px -15px rgba(0, 0, 0, 0.65),
+      0 10px 20px -5px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.12),
+      inset 0 1px 1px rgba(255, 255, 255, 0.8),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Ref-04 Recessed Button Bay (Clean flush tray, no chunky extrusion) */
+  .button-bay-recessed {
+    box-shadow: 
+      inset 0 2px 4px rgba(0, 0, 0, 0.25),
+      inset 0 1px 2px rgba(0, 0, 0, 0.2),
+      0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  /* Apple-style Matte Hero Red PLAY Button (NO BUMP) */
+  .hero-play-button {
+    background: #FF453A;
+    border: 1px solid #E02E24;
+    box-shadow: 
+      0 2px 8px rgba(255, 69, 58, 0.3),
+      inset 0 1px 0.5px rgba(255, 255, 255, 0.3);
+  }
+  .hero-play-button:hover {
+    background: #E8382D;
+  }
+  .hero-play-button:active {
+    background: #D92B20;
+    transform: scale(0.97);
+    box-shadow: 0 1px 3px rgba(255, 69, 58, 0.2);
+  }
+
+  /* Apple-style Flat Matte Hardware Keys (NO BUMP) */
+  .hardware-key-gray {
+    background: #E1DDD3;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 
+      0 1px 3px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  .hardware-key-gray:hover {
+    background: #E8E5DC;
+  }
+  .hardware-key-gray:active {
+    background: #D4D0C5;
+    transform: scale(0.97);
+  }
+
+  /* Apple-style Green Save Pill (NO BUMP) */
+  .hardware-key-green {
+    background: #1DB954;
+    border: 1px solid #169E45;
+    box-shadow: 
+      0 2px 8px rgba(29, 185, 84, 0.3),
+      inset 0 1px 0.5px rgba(255, 255, 255, 0.3);
+  }
+  .hardware-key-green:hover {
+    background: #17A348;
+  }
+  .hardware-key-green:active {
+    background: #12883B;
+    transform: scale(0.97);
+  }
+}
