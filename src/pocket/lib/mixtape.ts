@@ -111,9 +111,80 @@ export function decodeMixtape(data: string): Mixtape | null {
   }
 }
 
-export function shareUrl(m: Mixtape) {
+// ─── Link curto (formato 2) ────────────────────────────────────────────────
+// Só o essencial viaja no link: humor, textos e os ids do YouTube (11 letras cada).
+// Título e canal das faixas são lidos do YouTube na hora de tocar.
+// Campos separados por U+0001; comprimido (deflate) só quando fica menor.
+// Prefixo "~" marca o comprimido. Links do formato 1 (#/m/…) continuam abrindo.
+
+const SEP = '\u0001';
+const MOOD_CODE: Record<MoodId, string> = { groovy: 'g', romantic: 'r', melancholy: 'm', focus: 'f', flirty: 'p' };
+const CODE_MOOD = Object.fromEntries(Object.entries(MOOD_CODE).map(([k, v]) => [v, k])) as Record<string, MoodId>;
+
+function bytesToB64Url(bytes: Uint8Array) {
+  let bin = '';
+  bytes.forEach((b) => (bin += String.fromCharCode(b)));
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function b64UrlToBytes(b64: string) {
+  const s = b64.replace(/-/g, '+').replace(/_/g, '/');
+  const bin = atob(s + '==='.slice((s.length + 3) % 4));
+  return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+}
+
+async function pipe(bytes: Uint8Array, stream: CompressionStream | DecompressionStream) {
+  const out = new Blob([bytes]).stream().pipeThrough(stream);
+  return new Uint8Array(await new Response(out).arrayBuffer());
+}
+
+export async function encodeShort(m: Mixtape): Promise<string> {
+  const clean = (s: string) => s.split(SEP).join(' ');
+  const text = [MOOD_CODE[m.mood], clean(m.title), clean(m.from), clean(m.to), clean(m.note), m.tracks.map((t) => t.id).join('')].join(SEP);
+  const bytes = new TextEncoder().encode(text);
+  const raw = bytesToB64Url(bytes);
+  if (typeof CompressionStream === 'undefined') return raw;
+  try {
+    const packed = '~' + bytesToB64Url(await pipe(bytes, new CompressionStream('deflate-raw')));
+    return packed.length < raw.length ? packed : raw;
+  } catch {
+    return raw;
+  }
+}
+
+export async function decodeShort(hash: string): Promise<Mixtape | null> {
+  try {
+    const packed = hash.startsWith('~');
+    let bytes = b64UrlToBytes(packed ? hash.slice(1) : hash);
+    if (packed) bytes = await pipe(bytes, new DecompressionStream('deflate-raw'));
+    const [code, title = '', from = '', to = '', note = '', ids = ''] = new TextDecoder().decode(bytes).split(SEP);
+    const mood = CODE_MOOD[code];
+    if (!mood) return null;
+    const tracks = (ids.match(/[\w-]{11}/g) ?? []).slice(0, MAX_TRACKS).map((id, i) => placeholderTrack(id, i));
+    if (!tracks.length) return null;
+    return {
+      v: 1,
+      mood,
+      finish: MOODS[mood].finish,
+      title: title.slice(0, LIMITS.title),
+      from: from.slice(0, LIMITS.from),
+      to: to.slice(0, LIMITS.to),
+      note: note.slice(0, LIMITS.note),
+      tracks,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// nome provisório até o YouTube responder (o mesmo de quando não há rede)
+export function placeholderTrack(id: string, i: number): Track {
+  return { id, title: `Faixa ${String(i + 1).padStart(2, '0')}`, author: 'YouTube' };
+}
+
+export async function shareUrl(m: Mixtape) {
   const base = `${location.origin}${location.pathname}`;
-  return `${base}#/m/${encodeMixtape(m)}`;
+  return `${base}#${await encodeShort(m)}`;
 }
 
 // ─── Demo ──────────────────────────────────────────────────────────────────

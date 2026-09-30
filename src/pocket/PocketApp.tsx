@@ -1,6 +1,6 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType } from 'react';
+import { lazy, Suspense, useEffect, useState, type ComponentType } from 'react';
 import './pocket.css';
-import { decodeMixtape, DEMO } from './lib/mixtape';
+import { decodeMixtape, decodeShort, DEMO, type Mixtape } from './lib/mixtape';
 import { PlayerScreen } from './screens/Player';
 import { Landing } from './screens/Landing';
 import { CreateWizard } from './screens/Create';
@@ -24,13 +24,33 @@ function useHash() {
   return hash.replace(/^#/, '') || '/';
 }
 
+// Link de mixtape: formato 2 (curto) é qualquer hash que não começa com "/";
+// o formato 1 (#/m/…) segue abrindo para links já compartilhados.
+function useMixtape(route: string) {
+  const [state, setState] = useState<{ route: string; mix: Mixtape | null } | null>(null);
+  const isV1 = route.startsWith('/m/');
+  const isV2 = !route.startsWith('/');
+  useEffect(() => {
+    if (!isV2) return;
+    let alive = true;
+    decodeShort(route).then((mix) => alive && setState({ route, mix }));
+    return () => {
+      alive = false;
+    };
+  }, [route, isV2]);
+  if (isV1) return { is: true, ready: true, mix: decodeMixtape(route.slice(3)) };
+  if (isV2) return { is: true, ready: state?.route === route, mix: state?.route === route ? state.mix : null };
+  return { is: false, ready: true, mix: null };
+}
+
 export default function PocketApp() {
   const route = useHash();
-  const mix = useMemo(() => (route.startsWith('/m/') ? decodeMixtape(route.slice(3)) : null), [route]);
+  const link = useMixtape(route);
 
-  if (route.startsWith('/m/')) {
-    if (!mix) return <Broken />;
-    return <PlayerScreen key={route} mix={mix} />;
+  if (link.is) {
+    if (!link.ready) return <div className="pp-root pp-stage" />;
+    if (!link.mix) return <Broken />;
+    return <PlayerScreen key={route} mix={link.mix} />;
   }
   if (route === '/demo') return <PlayerScreen key="demo" mix={DEMO} demo />;
   if (route === '/criar') return <CreateWizard />;

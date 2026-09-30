@@ -13,7 +13,7 @@ import {
 } from '../components/Lcd';
 import { useTicker } from '../hooks/useTicker';
 import { useYouTube } from '../hooks/useYouTube';
-import { fmtTime, type Mixtape } from '../lib/mixtape';
+import { fetchTrackInfo, fmtTime, type Mixtape, type Track } from '../lib/mixtape';
 import { FINISHES, finishVars } from '../tokens';
 
 type Mode = 'boot' | 'menu' | 'now' | 'list' | 'note';
@@ -23,7 +23,21 @@ type Overlay = { kind: 'vol' } | { kind: 'msg'; text: string; sub?: string; icon
 
 export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
   const finish = FINISHES[mix.finish];
-  const total = mix.tracks.length;
+  // links curtos chegam sem título/canal: busca no YouTube e troca o nome provisório
+  const [tracks, setTracks] = useState<Track[]>(mix.tracks);
+  useEffect(() => {
+    let alive = true;
+    mix.tracks.forEach((t, i) => {
+      if (t.author !== 'YouTube' || !/^Faixa \d\d$/.test(t.title)) return;
+      fetchTrackInfo(t.id)
+        .then((info) => alive && setTracks((all) => all.map((x, j) => (j === i ? info : x))))
+        .catch(() => {});
+    });
+    return () => {
+      alive = false;
+    };
+  }, [mix]);
+  const total = tracks.length;
   const host = useRef<HTMLDivElement>(null);
   const tick = useTicker();
 
@@ -51,7 +65,7 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
   const startTrack = (i: number) => {
     setIndex(i);
     setLoaded(i);
-    yt.load(mix.tracks[i].id, true);
+    yt.load(tracks[i].id, true);
     setMode((m) => (m === 'boot' ? 'now' : m));
   };
 
@@ -222,7 +236,7 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
           tick={tick}
           playing={current && playing}
           buffering={current && yt.status === 'buffering'}
-          track={mix.tracks[index]}
+          track={tracks[index]}
           index={index}
           total={total}
           time={current ? yt.time : 0}
@@ -232,7 +246,7 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
       )}
       {mode === 'list' && (
         <ScreenList
-          tracks={mix.tracks}
+          tracks={tracks}
           cursor={cursor}
           playingIndex={loaded ?? -1}
           playing={playing}

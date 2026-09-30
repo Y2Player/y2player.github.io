@@ -130,9 +130,9 @@ export function CreateWizard() {
     [mood, finishId, title, from, to, note, slots],
   );
 
-  const generate = () => {
+  const generate = async () => {
     haptic('heavy');
-    setLink(shareUrl(mix));
+    setLink(await shareUrl(mix));
     setCopied(false);
   };
 
