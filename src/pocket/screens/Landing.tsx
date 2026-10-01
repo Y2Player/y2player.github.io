@@ -9,26 +9,6 @@ const CYCLE_MS = 500;
 // depois de mexer na roda, a troca automática espera esse tempo para voltar
 const HOLD_MS = 4000;
 
-// Texto do botão sobre a cor do aparelho: escolhe entre tinta escura e branco
-// pelo maior contraste (WCAG), para manter a leitura em qualquer acabamento.
-const INK_DARK = '#1d1d1b';
-const INK_LIGHT = '#ffffff';
-function luminance(hex: string) {
-  const n = parseInt(hex.slice(1), 16);
-  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
-    const c = v / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
-}
-// tinta que lê bem sobre a cor do plástico (botões pintados com o aparelho)
-export function readableInk(bg: string) {
-  const l = luminance(bg);
-  const vsDark = (l + 0.05) / (luminance(INK_DARK) + 0.05);
-  const vsLight = (luminance(INK_LIGHT) + 0.05) / (l + 0.05);
-  return vsDark >= vsLight ? INK_DARK : INK_LIGHT;
-}
-
 export function Landing() {
   const tick = useTicker();
   const [m, setM] = useState(0);
@@ -78,8 +58,7 @@ export function Landing() {
             <div className="mt-5 flex flex-col items-center gap-3 sm:mt-8 sm:flex-row sm:justify-center lg:justify-start">
               <a
                 href="#/criar"
-                className="pp-btn w-full sm:w-auto"
-                style={{ background: finish.body, color: readableInk(finish.body) }}
+                className="pp-btn is-gel w-full sm:w-auto"
               >
                 Criar
               </a>

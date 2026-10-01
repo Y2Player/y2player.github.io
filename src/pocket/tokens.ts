@@ -320,6 +320,24 @@ export const TYPE = {
   lcdBody: "'VT323', monospace",
 };
 
+// Tinta que lê bem sobre a cor do plástico (botões pintados com o aparelho).
+const INK_DARK = '#1D1D1B';
+const INK_LIGHT = '#FFFFFF';
+function luminance(hex: string) {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+}
+export function readableInk(bg: string) {
+  const l = luminance(bg);
+  const vsDark = (l + 0.05) / (luminance(INK_DARK) + 0.05);
+  const vsLight = (luminance(INK_LIGHT) + 0.05) / (l + 0.05);
+  return vsDark >= vsLight ? INK_DARK : INK_LIGHT;
+}
+
 // Variáveis de material (aparelho e componentes isolados).
 export function materialVars(f: Finish): CSSProperties {
   return {
@@ -333,6 +351,8 @@ export function materialVars(f: Finish): CSSProperties {
     '--pcb': f.pcb,
     // no plástico escuro o miolo brilha em tom de cobre, não cinza
     '--warm': f.see === 'screen' ? 0.6 : 0,
+    // botões em gel: texto que lê bem sobre o plástico
+    '--body-ink': readableInk(f.body),
     '--key': f.key,
     '--key-hi': f.keyHi,
     '--key-lo': f.keyLo,

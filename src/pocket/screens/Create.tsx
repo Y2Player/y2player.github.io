@@ -323,12 +323,12 @@ export function CreateWizard() {
           {/* barra de ação: sempre no pé da folha */}
           <div className="flex flex-none gap-3 pt-4 lg:pt-6">
             {step < 2 && (
-              <button className="pp-btn flex-1" disabled={!canNext} onClick={() => (haptic('key'), setStep((s) => s + 1))}>
+              <button className="pp-btn is-gel flex-1" disabled={!canNext} onClick={() => (haptic('key'), setStep((s) => s + 1))}>
                 {step === 1 && !canNext ? tracksCta : 'Avançar'}
               </button>
             )}
             {step === 2 && !link && (
-              <button className="pp-btn is-signal flex-1" onClick={generate}>
+              <button className="pp-btn is-gel flex-1" onClick={generate}>
                 Gravar mix
               </button>
             )}
@@ -337,7 +337,7 @@ export function CreateWizard() {
                 <a className="pp-btn is-ghost" href={link.slice(link.indexOf('#'))}>
                   Testar
                 </a>
-                <button className="pp-btn is-signal flex-1" onClick={copy}>
+                <button className="pp-btn is-gel flex-1" onClick={copy}>
                   {copied ? 'Copiado. Agora manda.' : 'Copiar link'}
                 </button>
               </>

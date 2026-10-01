@@ -721,6 +721,29 @@
   background: var(--signal);
   color: #fff;
 }
+/* Botão em gel: o mesmo plástico do aparelho, com reflexo no alto e borda grossa. Cor e tinta vêm do acabamento (--body, --body-ink). */
+.pp-btn.is-gel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  color: var(--body-ink);
+  background:
+    radial-gradient(90% 140% at 50% 130%, color-mix(in srgb, var(--body-hi) 45%, transparent), transparent 70%),
+    var(--body);
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--body-hi) 70%, transparent),
+    inset 0 -4px 9px color-mix(in srgb, var(--body-lo) 45%, transparent);
+}
+.pp-btn.is-gel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  /* reflexo molhado na metade de cima */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 52%);
+}
+
 .pp-btn.is-ghost {
   background: transparent;
   color: var(--ink);

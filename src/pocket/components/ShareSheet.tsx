@@ -58,11 +58,11 @@ export function ShareSheet({ mix, onClose }: { mix: Mixtape; onClose: () => void
   return (
     <div className="pp-modal" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="pp-sheet pp-modal__card pp-fade-in" role="dialog" aria-modal="true" aria-labelledby="pp-share-title">
-        <h2 id="pp-share-title" className="text-[22px] font-medium tracking-[-0.01em]">
+        <h2 id="pp-share-title" className="text-center text-[22px] font-medium tracking-[-0.01em]">
           Compartilhar este mix
         </h2>
         <div className="mt-6 flex flex-col gap-3">
-          <button ref={first} className="pp-btn is-signal w-full" onClick={shareImage} disabled={!file}>
+          <button ref={first} className="pp-btn is-gel w-full" onClick={shareImage} disabled={!file}>
             {file ? 'Imagem pros stories' : 'Gerando imagem…'}
           </button>
           <button

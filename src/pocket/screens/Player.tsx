@@ -3,7 +3,6 @@ import { Device, type WheelZone } from '../components/Hardware';
 import { HomeLink } from '../components/HomeLink';
 import { ShareSheet } from '../components/ShareSheet';
 import { FROM_MIX_KEY } from './Create';
-import { readableInk } from './Landing';
 import {
   LcdScreen,
   MENU_ITEMS,
@@ -333,8 +332,7 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
             </p>
             <button
               ref={popBtn}
-              className="pp-btn mt-6 w-full"
-              style={{ background: finish.body, color: readableInk(finish.body) }}
+              className="pp-btn is-gel mt-6 w-full"
               onClick={closeNote}
             >
               Bora ouvir
@@ -354,8 +352,7 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
             </p>
             <a
               href="#/criar"
-              className="pp-btn mt-6 w-full"
-              style={{ background: finish.body, color: readableInk(finish.body) }}
+              className="pp-btn is-gel mt-6 w-full"
               autoFocus
               // a criação lembra de onde veio: o Voltar dela retorna a este mix
               onClick={() => sessionStorage.setItem(FROM_MIX_KEY, location.hash)}
