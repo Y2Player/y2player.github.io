@@ -7,6 +7,7 @@ import { renderStory } from '../lib/story';
 // poder ser chamado direto no toque (o Safari exige isso).
 export function ShareSheet({ mix, onClose }: { mix: Mixtape; onClose: () => void }) {
   const [file, setFile] = useState<File | null>(null);
+  const [clear, setClear] = useState<File | null>(null);
   const [done, setDone] = useState<'link' | 'image' | null>(null);
   const first = useRef<HTMLButtonElement>(null);
   const link = location.href;
@@ -18,6 +19,10 @@ export function ShareSheet({ mix, onClose }: { mix: Mixtape; onClose: () => void
     let alive = true;
     renderStory(mix)
       .then((b) => alive && setFile(new File([b], 'y2player-mix.png', { type: 'image/png' })))
+      .catch(() => {});
+    // só o aparelho, com fundo vazado
+    renderStory(mix, { transparent: true })
+      .then((b) => alive && setClear(new File([b], 'y2player-mix-sem-fundo.png', { type: 'image/png' })))
       .catch(() => {});
     first.current?.focus();
     const esc = (e: KeyboardEvent) => e.key === 'Escape' && close.current();
@@ -36,7 +41,7 @@ export function ShareSheet({ mix, onClose }: { mix: Mixtape; onClose: () => void
     }
   };
 
-  const shareImage = () => {
+  const shareImage = (file: File | null) => {
     if (!file) return;
     // o link vai junto na área de transferência, pronto pro adesivo de link do story
     copyLink();
@@ -62,8 +67,11 @@ export function ShareSheet({ mix, onClose }: { mix: Mixtape; onClose: () => void
           Compartilhar este mix
         </h2>
         <div className="mt-6 flex flex-col gap-3">
-          <button ref={first} className="pp-btn is-gel w-full" onClick={shareImage} disabled={!file}>
+          <button ref={first} className="pp-btn is-gel w-full" onClick={() => shareImage(file)} disabled={!file}>
             {file ? 'Imagem pros stories' : 'Gerando imagem…'}
+          </button>
+          <button className="pp-btn is-gel w-full" onClick={() => shareImage(clear)} disabled={!clear}>
+            {clear ? 'Imagem sem fundo' : 'Gerando imagem…'}
           </button>
           <button
             className="pp-btn is-ghost w-full"

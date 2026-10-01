@@ -240,25 +240,28 @@ function background(c: CanvasRenderingContext2D, f: (typeof FINISHES)[keyof type
 }
 
 // ─── imagem ────────────────────────────────────────────────────────────────
-export async function renderStory(mix: Mixtape): Promise<Blob> {
+// Com fundo: o story pronto (1080×1920, fundo furta-cor e logo embaixo).
+// Sem fundo: só o aparelho em PNG vazado, pra virar adesivo em cima de outra foto.
+export async function renderStory(mix: Mixtape, { transparent = false } = {}): Promise<Blob> {
   await Promise.all([document.fonts.load(`20px ${PX}`), document.fonts.load(`500 20px ${UI}`)]).catch(() => {});
   const f = FINISHES[MOODS[mix.mood].finish];
-  const cv = document.createElement('canvas');
-  cv.width = W;
-  cv.height = H;
-  const c = cv.getContext('2d')!;
-
-  const footInk = background(c, f);
-
   // medidas do aparelho em "u" (1u = 1% da largura, como o cqw da tela)
-  const DW = 780;
+  const DW = transparent ? 1000 : 780;
   const u = DW / 100;
   const lcdW = 89 * u;
   const lcdH = lcdW * 0.82;
   const wheelD = 62 * u;
   const DH = 5.5 * u + lcdH + 7 * u + wheelD + 7 * u;
-  const x0 = (W - DW) / 2;
-  const y0 = (H - DH) / 2 - 40;
+  // sem fundo, o canvas é só o aparelho; a folga cobre as teclas laterais
+  const pad = 3 * u;
+  const cv = document.createElement('canvas');
+  cv.width = transparent ? Math.ceil(DW + pad * 2) : W;
+  cv.height = transparent ? Math.ceil(DH + pad * 2) : H;
+  const c = cv.getContext('2d')!;
+
+  const footInk = transparent ? '' : background(c, f);
+  const x0 = transparent ? pad : (W - DW) / 2;
+  const y0 = transparent ? pad : (H - DH) / 2 - 40;
 
   // teclas laterais (saem de baixo da casca)
   const key = (side: 'l' | 'r', top: number, h: number) => {
@@ -406,6 +409,10 @@ export async function renderStory(mix: Mixtape): Promise<Blob> {
   c.textBaseline = 'top';
   c.textAlign = 'left';
   c.fillText(`${String(mix.tracks.length).padStart(2, '0')} FAIXAS`, px0 + iconH * 1.3, cy + 0.1 * u);
+  // de onde veio: o endereço no meio da barra, pra quem vê o story
+  c.textAlign = 'center';
+  c.fillText('Y2PLAYER.COM', lx + lcdW / 2, cy + 0.1 * u);
+  c.textAlign = 'left';
   drawGrid(c, icon(BATT), px0 + pw - 1.8 * u * 1.75, cy + 0.1 * u, (1.8 * u) / 4, ink, f.oled, 0);
   cy += 3.2 * u + 1.8 * u;
   c.globalAlpha = 0.18;
@@ -535,7 +542,8 @@ export async function renderStory(mix: Mixtape): Promise<Blob> {
   rr(c, wcx + ps * 0.25 - ps * 0.0875, wcy - ps * 0.29, ps * 0.175, ps * 0.58, ps * 0.03);
   c.fill();
 
-  // rodapé: o logo, centrado onde antes ficava o nome escrito
+  // rodapé: o logo, centrado onde antes ficava o nome escrito (só na versão com fundo)
+  if (transparent) return new Promise((res, rej) => cv.toBlob((b) => (b ? res(b) : rej(new Error('png'))), 'image/png'));
   const lh = 44;
   const ls = lh / LOGO_BOX.h;
   c.save();
