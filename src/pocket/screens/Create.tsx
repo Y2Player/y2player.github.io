@@ -662,7 +662,7 @@ function StepNote(p: {
           <textarea
             className="pp-field min-h-[96px] resize-none leading-[1.45] lg:min-h-[132px]"
             maxLength={LIMITS.note}
-            placeholder="Escreve do coração (ou do jeito que der). Aparece no visor quando apertarem MENU."
+            placeholder="Escreve do coração (ou do jeito que der)."
             value={p.note}
             onChange={(e) => p.setNote(e.target.value)}
           />
