@@ -66,15 +66,16 @@ export function Landing() {
 
   return (
     <div className="pp-root pp-stage" style={finishVars(finish)}>
-      <div className="mx-auto grid min-h-[100dvh] max-w-[1080px] px-5">
-        <main className="grid items-center gap-10 pt-10 pb-6 lg:grid-cols-[1fr_400px] lg:gap-20">
-          <div className="order-2 text-center lg:order-1 lg:text-left">
-            <h1 className="text-[34px] font-medium leading-[1.05] tracking-[-0.025em] sm:text-[48px]">Qual a vibe de hoje?</h1>
-            <p className="mx-auto mt-5 max-w-[420px] text-[17px] leading-[1.5] lg:mx-0" style={{ color: 'var(--ink-2)' }}>
+      {/* tela de app: cabe na altura da janela; no celular o aparelho encolhe pra caber o texto */}
+      <div className="mx-auto h-[100dvh] max-w-[1080px] overflow-hidden px-5">
+        <main className="flex h-full flex-col gap-6 pt-6 pb-[calc(20px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-[1fr_400px] lg:items-center lg:gap-20 lg:py-10">
+          <div className="order-2 flex-none text-center lg:order-1 lg:text-left">
+            <h1 className="text-[30px] font-medium leading-[1.05] tracking-[-0.025em] sm:text-[48px]">Qual a vibe de hoje?</h1>
+            <p className="mx-auto mt-3 max-w-[420px] sm:mt-5 text-[17px] leading-[1.5] lg:mx-0" style={{ color: 'var(--ink-2)' }}>
               Crie seu mix com até 5 músicas, escreva 1 bilhete levemente cafona e escolha 1 bichinho com mais
               sentimento que você. Depois é só mandar pra quem você quiser.
             </p>
-            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
+            <div className="mt-5 flex flex-col items-center gap-3 sm:mt-8 sm:flex-row sm:justify-center lg:justify-start">
               <a
                 href="#/criar"
                 className="pp-btn w-full sm:w-auto"
@@ -85,8 +86,8 @@ export function Landing() {
             </div>
           </div>
 
-          <div className="order-1 flex justify-center lg:order-2">
-            <div className="pp-cq pp-arrive" style={{ width: 'min(calc(100vw - 56px), 380px)' }}>
+          <div className="pp-fit order-1 flex-1 lg:order-2 lg:h-full">
+            <div className="pp-cq pp-arrive">
               <Device
                 finish={finish}
                 lit={lit}

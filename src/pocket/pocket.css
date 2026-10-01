@@ -874,9 +874,35 @@
   height: 100%;
 }
 
-/* wizard no celular: o aparelho aparece por trás da folha, só a cabeça e o visor */
-@media (max-width: 1023px) {
-  .pp-peek {
-    height: calc(min(100vw - 88px, 380px) * 0.98);
+/* área do aparelho que encolhe pra caber: a largura sai da altura disponível
+   (aparelho ≈ 1:1.56), então a tela nunca precisa rolar */
+.pp-fit {
+  container-type: size;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pp-fit > .pp-cq {
+  width: min(100cqw - 40px, var(--fit-max, 380px), (100cqh - 8px) / 1.58);
+}
+/* sem altura pra um aparelho legível (tela baixa com a lista cheia): some, e volta quando sobrar espaço */
+@container (max-height: 110px) {
+  .pp-fit > .pp-cq {
+    visibility: hidden;
+  }
+}
+/* tela baixa (iPhone SE e afins): tira o que é redundante pra sobrar aparelho */
+@media (max-height: 720px) and (max-width: 1023px) {
+  .pp-tall-only {
+    /* !important: ganha das utilidades de display do tailwind (flex, block) */
+    display: none !important;
+  }
+  .pp-step-title {
+    margin-top: 12px;
+    font-size: 22px;
+  }
+  .pp-track {
+    padding: 6px 10px;
   }
 }

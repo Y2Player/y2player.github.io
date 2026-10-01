@@ -14,7 +14,7 @@ import {
   type Mixtape,
   type Track,
 } from '../lib/mixtape';
-import { FINISHES, MOOD_LIST, finishForMood, finishVars, type MoodId } from '../tokens';
+import { FINISHES, MOODS, MOOD_LIST, finishForMood, finishVars, type MoodId } from '../tokens';
 
 type SlotStatus = 'empty' | 'loading' | 'ok' | 'invalid' | 'notfound';
 interface Slot {
@@ -232,28 +232,24 @@ export function CreateWizard() {
 
   return (
     <div className="pp-root pp-stage" style={finishVars(finish)}>
-      <div className="mx-auto max-w-[1080px] lg:grid lg:min-h-[100dvh] lg:grid-cols-[1fr_520px] lg:items-start lg:gap-16 lg:px-8">
-        {/* aparelho */}
-        <div className="lg:sticky lg:top-0 lg:flex lg:h-[100dvh] lg:flex-col">
-          <header className="flex h-14 items-center justify-between px-5 lg:px-0">
+      {/* tela de app: tudo cabe na altura da janela, sem rolar a página */}
+      <div className="mx-auto flex h-[100dvh] max-w-[1080px] flex-col overflow-hidden lg:grid lg:grid-cols-[1fr_520px] lg:gap-16 lg:px-8">
+        {/* aparelho: fica com a altura que sobra e encolhe pra caber */}
+        <div className="flex min-h-0 flex-1 flex-col lg:h-[100dvh]">
+          <header className="flex h-12 flex-none items-center justify-between px-5 lg:h-14 lg:px-0">
             <a href="#/" className="pp-spec" style={{ color: 'var(--ink-2)' }}>
               ← Voltar
             </a>
           </header>
-          <div className="relative flex justify-center overflow-hidden lg:flex-1 lg:items-center lg:overflow-visible pp-peek">
-            <div className="pp-cq pt-2 lg:pt-0" style={{ width: 'min(calc(100vw - 88px), 380px)' }}>
-              {device}
-            </div>
+          <div className="pp-fit flex-1 pb-3 lg:pb-14">
+            <div className="pp-cq">{device}</div>
           </div>
         </div>
 
         {/* folha do formulário */}
-        <section
-          className={`pp-sheet relative z-10 -mt-6 px-5 pb-[calc(96px+env(safe-area-inset-bottom))] pt-6 lg:px-8 lg:pb-8 ${
-            // gravada: o bloco de compartilhar fica centralizado na altura, alinhado ao aparelho
-            link ? 'lg:mb-0 lg:mt-14 lg:self-center' : 'lg:my-10 lg:mt-14'
-          }`}
-        >
+        <section className="pp-sheet relative z-10 flex min-h-0 flex-none flex-col px-5 pb-[calc(14px+env(safe-area-inset-bottom))] pt-5 lg:max-h-[calc(100dvh-80px)] lg:self-center lg:px-8 lg:py-8">
+          {/* se um dia não couber (teclado aberto, tela baixa), só o miolo da folha rola */}
+          <div className="min-h-0 flex-1 overflow-y-auto">
           {/* depois de gravar, a folha fica só com o bloco de compartilhar */}
           {!link && (
             <>
@@ -262,10 +258,10 @@ export function CreateWizard() {
                   <i key={i} className={i <= step ? 'on' : ''} />
                 ))}
               </div>
-              <p className="pp-spec mt-5" style={{ color: 'var(--ink-3)' }}>
+              <p className="pp-spec pp-tall-only mt-4 lg:mt-5" style={{ color: 'var(--ink-3)' }}>
                 Passo {step + 1} de 3
               </p>
-              <h1 className="mt-1 text-[28px] font-medium tracking-[-0.02em]">{STEP_TITLES[step]}</h1>
+              <h1 className="pp-step-title mt-1 text-[24px] font-medium tracking-[-0.02em] lg:text-[28px]">{STEP_TITLES[step]}</h1>
             </>
           )}
 
@@ -301,11 +297,10 @@ export function CreateWizard() {
             )}
           </div>
 
-          {/* barra de ação */}
-          <div
-            className="fixed inset-x-0 bottom-0 z-20 flex gap-3 px-5 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3 lg:static lg:mt-8 lg:p-0"
-            style={{ background: 'linear-gradient(to top, var(--paper) 70%, transparent)' }}
-          >
+          </div>
+
+          {/* barra de ação: sempre no pé da folha */}
+          <div className="flex flex-none gap-3 pt-4 lg:pt-6">
             {step > 0 && !link && (
               <button className="pp-btn is-ghost" onClick={() => setStep((s) => s - 1)}>
                 Voltar
@@ -343,47 +338,46 @@ export function CreateWizard() {
 function StepMood({ mood, setMood, tick }: { mood: MoodId; setMood: (m: MoodId) => void; tick: number }) {
   return (
     <>
-      <div className="mt-5 flex flex-col gap-2">
+      <div className="mt-4 grid grid-cols-2 gap-2">
         {MOOD_LIST.map((m) => {
           const on = m.id === mood;
           const f = FINISHES[m.finish];
           return (
             <button
               key={m.id}
-              className={`pp-chip flex items-center gap-4 p-2.5 pr-4 ${on ? 'is-on' : ''}`}
+              className={`pp-chip flex min-w-0 items-center gap-2.5 p-2 pr-2.5 lg:gap-3 lg:pr-3 ${on ? 'is-on' : ''}`}
               onClick={() => (haptic('key'), setMood(m.id))}
               aria-pressed={on}
             >
               {/* o visor já dentro do plástico daquele humor */}
               <div
-                className="flex-none rounded-[14px] p-[5px]"
+                className="flex-none rounded-[10px] p-[3px] lg:rounded-[12px] lg:p-[4px]"
                 style={{
                   background: f.body,
                   boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.3)',
                 }}
               >
                 <div
-                  className="pp-cq w-[72px] overflow-hidden rounded-[9px] p-1.5"
+                  className="pp-cq w-[40px] overflow-hidden rounded-[7px] p-[3px] lg:w-[56px] lg:rounded-[8px] lg:p-1"
                   style={{ background: f.lcdBg, color: f.lcdInk, boxShadow: `0 0 0 2px ${f.bezel}` }}
                 >
                   <MascotScene mood={m.id} tick={on ? tick : 0} playing={on} w={26} h={20} charX={3} ghost={0.06} />
                 </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-[17px] font-medium">{m.name}</span>
-                  <span className="pp-spec" style={{ color: 'var(--ink-3)', fontSize: 10 }}>
-                    {f.name}
-                  </span>
-                </div>
-                <div className="mt-0.5 text-[14px] leading-snug" style={{ color: 'var(--ink-2)' }}>
-                  {m.line}
+              <div className="min-w-0">
+                <div className="truncate text-[14px] font-medium leading-tight lg:text-[16px]">{m.name}</div>
+                <div className="pp-spec mt-0.5 truncate" style={{ color: 'var(--ink-3)', fontSize: 10 }}>
+                  {f.name}
                 </div>
               </div>
             </button>
           );
         })}
       </div>
+      {/* a frase só do escolhido, pra lista caber inteira */}
+      <p className="mt-3 min-h-[2.9em] text-[14px] leading-snug lg:text-[15px]" style={{ color: 'var(--ink-2)' }}>
+        {MOODS[mood].line}
+      </p>
     </>
   );
 }
@@ -472,7 +466,7 @@ function StepTracks({
       <p className="mt-2 text-[15px] leading-[1.5]" style={{ color: 'var(--ink-2)' }}>
         Cola os links do youtube.
       </p>
-      <div className="mt-5 flex flex-col gap-3">
+      <div className="mt-4 flex flex-col gap-2">
         {slots.map((s, i) => (
           <div
             key={s.key}
@@ -480,7 +474,7 @@ function StepTracks({
               if (el) items.current.set(s.key, el);
               else items.current.delete(s.key);
             }}
-            className="relative rounded-[16px] p-3"
+            className="pp-track relative rounded-[16px] p-2.5"
             style={{
               background: 'var(--paper-2)',
               boxShadow: drag?.key === s.key ? 'inset 0 0 0 1.5px var(--ink-3)' : 'inset 0 0 0 1px var(--line)',
@@ -513,6 +507,17 @@ function StepTracks({
               <span className="pp-spec w-6 flex-none text-center" style={{ color: 'var(--ink-3)' }}>
                 {String(i + 1).padStart(2, '0')}
               </span>
+              {s.status === 'ok' && s.track ? (
+                <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                  <img src={thumb(s.track.id)} alt="" className="h-9 w-12 flex-none rounded-[6px] object-cover" loading="lazy" />
+                  <div className="min-w-0">
+                    <div className="truncate text-[14px] font-medium leading-tight">{s.track.title}</div>
+                    <div className="truncate text-[12px]" style={{ color: 'var(--ink-3)' }}>
+                      {s.track.author}
+                    </div>
+                  </div>
+                </div>
+              ) : (
               <input
                 className="pp-field min-w-0 flex-1 !py-2.5"
                 inputMode="url"
@@ -525,6 +530,7 @@ function StepTracks({
                 onChange={(e) => setSlotUrl(i, e.target.value)}
                 aria-label={`Link da faixa ${i + 1}`}
               />
+              )}
               {s.url ? (
                 <button className="pp-spec h-10 flex-none rounded-full px-3" style={{ color: 'var(--ink-2)' }} onClick={() => setSlotUrl(i, '')}>
                   Limpar
@@ -548,28 +554,16 @@ function StepTracks({
                 </button>
               )}
             </div>
-            <div className="mt-2 flex min-h-[36px] items-center gap-3 pl-16">
-              {s.status === 'ok' && s.track ? (
-                <>
-                  <img src={thumb(s.track.id)} alt="" className="h-9 w-12 flex-none rounded-[6px] object-cover" loading="lazy" />
-                  <div className="min-w-0">
-                    <div className="truncate text-[14px] font-medium leading-tight">{s.track.title}</div>
-                    <div className="truncate text-[12px]" style={{ color: 'var(--ink-3)' }}>
-                      {s.track.author}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <span className="text-[13px]" style={{ color: s.status === 'invalid' || s.status === 'notfound' ? '#d8352a' : 'var(--ink-3)' }}>
-                  {MSG[s.status]}
-                </span>
-              )}
-            </div>
+            {!(s.status === 'ok' && s.track) && (
+              <div className="mt-1.5 pl-16 text-[13px] leading-[18px]" style={{ color: s.status === 'invalid' || s.status === 'notfound' ? '#d8352a' : 'var(--ink-3)' }}>
+                {MSG[s.status]}
+              </div>
+            )}
           </div>
         ))}
         {slots.length < MAX_TRACKS && (
           <button
-            className="pp-chip flex h-12 items-center justify-center gap-2 text-[15px] font-medium"
+            className="pp-chip flex h-11 flex-none items-center justify-center gap-2 text-[15px] font-medium"
             style={{ color: 'var(--ink-2)', textAlign: 'center' }}
             onClick={addSlot}
           >
@@ -577,7 +571,7 @@ function StepTracks({
           </button>
         )}
       </div>
-      <div className="mt-4 flex items-center justify-between">
+      <div className="pp-tall-only mt-3 flex items-center justify-between">
         <span className="pp-spec" style={{ color: 'var(--ink-3)' }}>
           {okCount} pronta{okCount === 1 ? '' : 's'}
         </span>
@@ -632,7 +626,7 @@ function StepNote(p: {
   return (
     <>
       {!p.link && (
-      <div className="mt-5 flex flex-col gap-4">
+      <div className="mt-4 flex flex-col gap-3 lg:mt-5 lg:gap-4">
         <label className="block">
           <div className="mb-1.5 flex justify-between text-[14px] font-medium">
             Nome do mix <Counter n={p.title.length} max={LIMITS.title} />
@@ -660,7 +654,7 @@ function StepNote(p: {
             Bilhete <Counter n={p.note.length} max={LIMITS.note} />
           </div>
           <textarea
-            className="pp-field min-h-[132px] resize-none leading-[1.45]"
+            className="pp-field min-h-[96px] resize-none leading-[1.45] lg:min-h-[132px]"
             maxLength={LIMITS.note}
             placeholder="Escreve do coração (ou do jeito que der). Aparece no visor quando apertarem MENU."
             value={p.note}
