@@ -29,6 +29,9 @@ const newSlot = (url = '', status: SlotStatus = 'empty'): Slot => ({ key: `s${++
 
 const STEP_TITLES = ['Escolha um bichinho', 'Defina as músicas', 'Agora um recado'];
 
+// quem chega pelo + de um mix: o Voltar da primeira etapa retorna a ele
+export const FROM_MIX_KEY = 'pp-from-mix';
+
 export function CreateWizard() {
   const tick = useTicker();
   const [step, setStep] = useState(0);
@@ -46,6 +49,9 @@ export function CreateWizard() {
   const [previewPlaying, setPreviewPlaying] = useState(true);
   const [override, setOverride] = useState<'now' | 'note' | 'list' | null>(null);
   const timers = useRef(new Map<string, number>());
+  // lido ao abrir e apagado depois de montar, pra não valer numa próxima visita à criação
+  const [fromMix] = useState(() => sessionStorage.getItem(FROM_MIX_KEY) ?? '');
+  useEffect(() => sessionStorage.removeItem(FROM_MIX_KEY), []);
   // a cor do aparelho vem do humor
   const finish = finishForMood(mood);
   const finishId = finish.id;
@@ -237,7 +243,8 @@ export function CreateWizard() {
         {/* aparelho: fica com a altura que sobra e encolhe pra caber */}
         <div className="flex min-h-0 flex-1 flex-col lg:h-[100dvh]">
           <header className="flex h-12 flex-none items-center justify-between px-5 lg:h-14 lg:px-0">
-            {/* o único voltar: volta uma etapa; na primeira (ou já gravado), volta pra home */}
+            {/* o único voltar: volta uma etapa; na primeira (ou já gravado), volta pro mix
+                de onde a pessoa veio pelo +, ou pra home */}
             <a
               href="#/"
               className="pp-spec"
@@ -246,6 +253,9 @@ export function CreateWizard() {
                 if (step > 0 && !link) {
                   e.preventDefault();
                   setStep((s) => s - 1);
+                } else if (fromMix) {
+                  e.preventDefault();
+                  history.back();
                 }
               }}
             >

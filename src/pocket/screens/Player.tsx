@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Device, type WheelZone } from '../components/Hardware';
 import { HomeLink } from '../components/HomeLink';
 import { ShareSheet } from '../components/ShareSheet';
+import { FROM_MIX_KEY } from './Create';
 import {
   LcdScreen,
   MENU_ITEMS,
@@ -302,7 +303,14 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
                 <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
               </svg>
             </button>
-            <a href="#/criar" className="pp-btn is-ghost !h-10 !w-10 !p-0" aria-label="Criar a sua" title="Criar a sua">
+            <a
+              href="#/criar"
+              className="pp-btn is-ghost !h-10 !w-10 !p-0"
+              aria-label="Criar a sua"
+              title="Criar a sua"
+              // a criação lembra de onde veio: o Voltar dela retorna a este mix
+              onClick={() => sessionStorage.setItem(FROM_MIX_KEY, location.hash)}
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
                 <path d="M12 5v14M5 12h14" />
               </svg>
