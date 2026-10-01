@@ -132,6 +132,37 @@
   pointer-events: none;
   opacity: var(--internals, 0);
   mix-blend-mode: var(--see, multiply);
+  /* visto através do gel: sem cor própria (ganha a cor do plástico) e um pouco borrado */
+  filter: grayscale(1) sepia(var(--warm, 0)) contrast(0.7) brightness(1.12) blur(0.22cqw);
+}
+/* Gel: a casca tem espessura. A borda clareia (mais plástico no caminho da luz),
+   logo pra dentro vem uma faixa mais saturada, e aparece a parede interna da casca.
+   Brilho molhado largo no alto, um risco na lateral e um reflexo embaixo. */
+.pp-gel {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 0.5cqw color-mix(in srgb, var(--body-hi) 70%, transparent),
+    inset 0 0 0 1.6cqw color-mix(in srgb, var(--body-hi) 34%, transparent),
+    inset 0 0 4cqw 2.4cqw color-mix(in srgb, var(--body-lo) 38%, transparent);
+  background:
+    radial-gradient(30% 2.4% at 30% 1.9%, rgba(255, 255, 255, 0.75), transparent 75%),
+    radial-gradient(2.4% 26% at 2.8% 34%, rgba(255, 255, 255, 0.6), transparent 75%),
+    radial-gradient(2% 14% at 97.2% 60%, rgba(255, 255, 255, 0.4), transparent 75%),
+    radial-gradient(24% 2.6% at 72% 97.6%, rgba(255, 255, 255, 0.45), transparent 75%),
+    radial-gradient(75% 40% at 50% 72%, color-mix(in srgb, var(--body-hi) 45%, transparent), transparent 70%);
+}
+.pp-gel::before {
+  content: '';
+  position: absolute;
+  inset: 2.4cqw;
+  border-radius: 5cqw;
+  border: 0.35cqw solid color-mix(in srgb, var(--body-hi) 55%, transparent);
+  filter: blur(0.12cqw);
+  opacity: 0.8;
 }
 /* grão do policarbonato */
 .pp-device::after {
@@ -549,10 +580,29 @@
   place-items: center;
   overflow: hidden;
   color: var(--accent-ink);
-  background: var(--accent);
-  box-shadow: 0 0.45cqw 0 var(--accent-lo);
+  /* bala de goma: gel na cor de sinal, luz atravessando por baixo */
+  background:
+    radial-gradient(70% 45% at 50% 92%, color-mix(in srgb, var(--accent) 75%, #fff) 0%, transparent 70%),
+    radial-gradient(circle at 50% 42%, var(--accent) 50%, var(--accent-lo) 100%);
+  --goma:
+    inset 0 -1.4cqw 1.8cqw color-mix(in srgb, var(--accent-lo) 75%, transparent),
+    inset 0 0.5cqw 0.8cqw rgba(255, 255, 255, 0.2);
+  box-shadow: var(--goma), 0 0.45cqw 0 var(--accent-lo);
   transition: transform 80ms ease, box-shadow 80ms ease;
   cursor: pointer;
+}
+/* reflexo em meia-lua no alto da goma */
+.pp-center::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  left: 22%;
+  top: 7%;
+  width: 56%;
+  height: 28%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 90%);
 }
 .pp-center svg {
   position: relative;
@@ -563,7 +613,7 @@
 .pp-center:active,
 .pp-center.is-down {
   transform: translateY(0.4cqw);
-  box-shadow: 0 0.05cqw 0 var(--accent-lo);
+  box-shadow: var(--goma), 0 0.05cqw 0 var(--accent-lo);
 }
 
 /* ─── Teclas laterais ──────────────────────────────────────────

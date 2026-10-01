@@ -415,6 +415,7 @@ export function Device(p: DeviceProps) {
 
       <div className={`pp-device ${p.framed ? 'is-framed' : ''}`}>
         <Internals />
+        <div className="pp-gel" />
         <div className="pp-bezel">
           {p.screen}
           <div className="pp-glass" />

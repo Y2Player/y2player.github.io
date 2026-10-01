@@ -331,6 +331,8 @@ export function materialVars(f: Finish): CSSProperties {
     '--brush': f.brush,
     '--see': f.see,
     '--pcb': f.pcb,
+    // no plástico escuro o miolo brilha em tom de cobre, não cinza
+    '--warm': f.see === 'screen' ? 0.6 : 0,
     '--key': f.key,
     '--key-hi': f.keyHi,
     '--key-lo': f.keyLo,

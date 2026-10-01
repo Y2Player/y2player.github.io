@@ -290,27 +290,89 @@ export async function renderStory(mix: Mixtape): Promise<Blob> {
   c.strokeStyle = 'rgba(0,0,0,.04)';
   c.lineWidth = 1;
   c.stroke();
-  // miolo através da carcaça transparente
+  // gel: miolo visto através da carcaça (tingido e borrado) + espessura e brilho da casca.
+  // Mesmas camadas do .pp-internals e do .pp-gel na tela.
   if (f.internals > 0) {
-    c.save();
-    rr(c, x0, y0, DW, DH, 7 * u);
-    c.clip();
-    c.translate(x0, y0);
-    c.scale(u, u);
-    c.globalAlpha = f.internals;
-    c.globalCompositeOperation = f.see;
+    const a = (hex: string, al: number) => `rgba(${rgb(hex).join(',')},${al})`;
+    const R = 7 * u;
+
+    // miolo desenhado à parte e colado com o filtro do gel
+    const inner = document.createElement('canvas');
+    inner.width = Math.ceil(DW);
+    inner.height = Math.ceil(DH);
+    const ic = inner.getContext('2d')!;
+    ic.scale(u, u);
     for (const p of INTERNALS) {
       const path = new Path2D(p.d);
       if (p.fill || p.board) {
-        c.fillStyle = p.board ? f.pcb : p.fill!;
-        c.fill(path);
+        ic.fillStyle = p.board ? f.pcb : p.fill!;
+        ic.fill(path);
       }
       if (p.stroke) {
-        c.strokeStyle = p.stroke;
-        c.lineWidth = p.sw ?? 0.3;
-        c.stroke(path);
+        ic.strokeStyle = p.stroke;
+        ic.lineWidth = p.sw ?? 0.3;
+        ic.stroke(path);
       }
     }
+    c.save();
+    rr(c, x0, y0, DW, DH, R);
+    c.clip();
+    c.globalAlpha = f.internals;
+    c.globalCompositeOperation = f.see;
+    const warm = f.see === 'screen' ? 0.6 : 0;
+    c.filter = `grayscale(1) sepia(${warm}) contrast(0.7) brightness(1.12) blur(${0.22 * u}px)`;
+    c.drawImage(inner, x0, y0);
+    c.filter = 'none';
+    c.globalAlpha = 1;
+    c.globalCompositeOperation = 'source-over';
+
+    // luz atravessando o gel atrás da roda
+    const glow = c.createRadialGradient(x0 + DW / 2, y0 + DH * 0.72, 0, x0 + DW / 2, y0 + DH * 0.72, DW * 0.75);
+    glow.addColorStop(0, a(f.bodyHi, 0.45));
+    glow.addColorStop(0.7, a(f.bodyHi, 0));
+    c.fillStyle = glow;
+    c.fillRect(x0, y0, DW, DH);
+
+    // faixa mais saturada logo pra dentro da borda
+    c.filter = `blur(${2 * u}px)`;
+    rr(c, x0 + 2.4 * u, y0 + 2.4 * u, DW - 4.8 * u, DH - 4.8 * u, R - 2.4 * u);
+    c.strokeStyle = a(f.bodyLo, 0.38);
+    c.lineWidth = 3 * u;
+    c.stroke();
+    c.filter = 'none';
+    // parede grossa clareando a borda + fio de luz na aresta
+    rr(c, x0 + 0.8 * u, y0 + 0.8 * u, DW - 1.6 * u, DH - 1.6 * u, R - 0.8 * u);
+    c.strokeStyle = a(f.bodyHi, 0.34);
+    c.lineWidth = 1.6 * u;
+    c.stroke();
+    rr(c, x0 + 0.25 * u, y0 + 0.25 * u, DW - 0.5 * u, DH - 0.5 * u, R - 0.25 * u);
+    c.strokeStyle = a(f.bodyHi, 0.7);
+    c.lineWidth = 0.5 * u;
+    c.stroke();
+    // parede interna da casca
+    c.filter = `blur(${0.12 * u}px)`;
+    rr(c, x0 + 2.4 * u, y0 + 2.4 * u, DW - 4.8 * u, DH - 4.8 * u, 5 * u);
+    c.strokeStyle = a(f.bodyHi, 0.44);
+    c.lineWidth = 0.35 * u;
+    c.stroke();
+    c.filter = 'none';
+
+    // brilho molhado: alto, laterais e embaixo
+    const spot = (cx: number, cy: number, rx: number, ry: number, al: number) => {
+      c.save();
+      c.translate(x0 + cx * DW, y0 + cy * DH);
+      c.scale(rx * DW, ry * DH);
+      const g = c.createRadialGradient(0, 0, 0, 0, 0, 1);
+      g.addColorStop(0, `rgba(255,255,255,${al})`);
+      g.addColorStop(0.75, 'rgba(255,255,255,0)');
+      c.fillStyle = g;
+      c.fillRect(-1, -1, 2, 2);
+      c.restore();
+    };
+    spot(0.3, 0.019, 0.3, 0.024, 0.75);
+    spot(0.028, 0.34, 0.024, 0.26, 0.6);
+    spot(0.972, 0.6, 0.02, 0.14, 0.4);
+    spot(0.72, 0.976, 0.24, 0.026, 0.45);
     c.restore();
   }
   rim(c, x0, y0, DW, DH, 7 * u, 0.28 * u, 0.55);
@@ -420,10 +482,49 @@ export async function renderStory(mix: Mixtape): Promise<Blob> {
   c.arc(wcx, wcy + 0.45 * u, cr, 0, Math.PI * 2);
   c.fillStyle = f.accentLo;
   c.fill();
+  // bala de goma: mesmas camadas do .pp-center
+  c.save();
   c.beginPath();
   c.arc(wcx, wcy, cr, 0, Math.PI * 2);
-  c.fillStyle = f.accent;
+  c.clip();
+  const gum = c.createRadialGradient(wcx, wcy - 0.16 * cr, 0, wcx, wcy - 0.16 * cr, 1.53 * cr);
+  gum.addColorStop(0.5, f.accent);
+  gum.addColorStop(1, f.accentLo);
+  c.fillStyle = gum;
+  c.fillRect(wcx - cr, wcy - cr, cr * 2, cr * 2);
+  // luz atravessando por baixo
+  c.save();
+  c.translate(wcx, wcy + 0.84 * cr);
+  c.scale(1.4 * cr, 0.9 * cr);
+  const thru = c.createRadialGradient(0, 0, 0, 0, 0, 1);
+  thru.addColorStop(0, blend(f.accent, '#ffffff', 0.75));
+  thru.addColorStop(0.7, `rgba(${rgb(f.accent).join(',')},0)`);
+  c.fillStyle = thru;
+  c.fillRect(-1, -1, 2, 2);
+  c.restore();
+  // sombra interna embaixo e luz interna em cima
+  c.filter = `blur(${0.9 * u}px)`;
+  c.beginPath();
+  c.arc(wcx, wcy - 1.4 * u, cr + 3 * u, 0, Math.PI * 2);
+  c.lineWidth = 6 * u;
+  c.strokeStyle = `rgba(${rgb(f.accentLo).join(',')},0.75)`;
+  c.stroke();
+  c.filter = `blur(${0.4 * u}px)`;
+  c.beginPath();
+  c.arc(wcx, wcy + 0.5 * u, cr + 3 * u, 0, Math.PI * 2);
+  c.strokeStyle = 'rgba(255,255,255,0.2)';
+  c.stroke();
+  c.filter = 'none';
+  // reflexo em meia-lua
+  const hy = wcy - 0.58 * cr;
+  const shine = c.createLinearGradient(0, hy - 0.28 * cr, 0, hy + 0.28 * cr);
+  shine.addColorStop(0, 'rgba(255,255,255,0.42)');
+  shine.addColorStop(0.9, 'rgba(255,255,255,0)');
+  c.beginPath();
+  c.ellipse(wcx, hy, 0.56 * cr, 0.28 * cr, 0, 0, Math.PI * 2);
+  c.fillStyle = shine;
   c.fill();
+  c.restore();
   rim(c, wcx - cr, wcy - cr, cr * 2, cr * 2, cr, 0.4 * u);
   // pausa (está tocando)
   c.fillStyle = f.accentInk;
