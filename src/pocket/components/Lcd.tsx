@@ -359,8 +359,13 @@ export function ScreenNote({ to, from, note, scroll = 0 }: { to: string; from: s
         }
       />
       <div style={{ fontSize: '2.1cqw', lineHeight: 1.4, opacity: 0.7, textAlign: 'center' }}>PARA {U(to || '—')}</div>
-      <div style={{ flex: 1, overflow: 'hidden', marginTop: '1.6cqw', position: 'relative' }}>
-        <div className="pp-note" style={{ transform: `translateY(${-scroll * 5.4}cqw)`, transition: 'transform 120ms steps(2)' }}>
+      {/* recado curto fica no meio do visor; o longo começa no topo e rola pela roda
+          (as margens automáticas zeram sozinhas quando o texto não cabe) */}
+      <div style={{ flex: 1, overflow: 'hidden', marginTop: '1.6cqw', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+        <div
+          className="pp-note"
+          style={{ marginBlock: 'auto', transform: `translateY(${-scroll * 5.4}cqw)`, transition: 'transform 120ms steps(2)' }}
+        >
           {note || 'escreve aqui, vai…'}
         </div>
       </div>
