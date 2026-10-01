@@ -209,34 +209,15 @@ function blob(c: CanvasRenderingContext2D, x: number, y: number, r: number, colo
 
 // Furta-cor em volta da cor oposta à do aparelho (matiz + 180°), para o
 // aparelho saltar do fundo. Aparelho sem cor própria (Cristal) usa o botão.
-function background(c: CanvasRenderingContext2D, f: (typeof FINISHES)[keyof typeof FINISHES]): string {
-  const [bh, bs] = toHsl(f.body);
-  const base = bs < 0.15 ? toHsl(f.accent)[0] : bh;
-  const h = base + 180;
-  const g = cssGradient(c, 0, 0, W, H, 155);
-  [
-    [h - 45, 90, 90],
-    [h - 15, 95, 85],
-    [h, 100, 88],
-    [h + 25, 95, 90],
-    [h + 55, 90, 89],
-    [h - 30, 90, 86],
-  ].forEach(([hh, ss, ll], i, a) => g.addColorStop(i / (a.length - 1), hsl(hh, ss, ll)));
+// fundo neutro, quase branco: um cinza claro liso que escurece de leve até embaixo (bem Apple)
+function background(c: CanvasRenderingContext2D): string {
+  const g = c.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#F5F5F7');
+  g.addColorStop(1, '#E8E8ED');
   c.fillStyle = g;
   c.fillRect(0, 0, W, H);
-  blob(c, 160, 260, 520, '#ffffff', 0.7);
-  blob(c, 980, 1500, 600, '#ffffff', 0.55);
-  blob(c, 900, 420, 380, hsl(h + 20, 100, 72), 0.4);
-  blob(c, 140, 1600, 420, hsl(h - 40, 100, 74), 0.35);
-  // reflexo cromado diagonal
-  const sh = cssGradient(c, 0, 0, W, H, 120);
-  sh.addColorStop(0.38, 'rgba(255,255,255,0)');
-  sh.addColorStop(0.46, 'rgba(255,255,255,.55)');
-  sh.addColorStop(0.5, 'rgba(255,255,255,0)');
-  c.fillStyle = sh;
-  c.fillRect(0, 0, W, H);
-  [[150, 330, 34], [930, 250, 22], [990, 1180, 30], [110, 1330, 20], [880, 1700, 18]].forEach(([x, y, r]) => sparkle(c, x, y, r, '#ffffff', 0.95));
-  return hsl(h, 45, 26, 0.75);
+  // tinta do logo do rodapé
+  return '#6E6E73';
 }
 
 // ─── imagem ────────────────────────────────────────────────────────────────
@@ -259,7 +240,7 @@ export async function renderStory(mix: Mixtape, { transparent = false } = {}): P
   cv.height = transparent ? Math.ceil(DH + pad * 2) : H;
   const c = cv.getContext('2d')!;
 
-  const footInk = transparent ? '' : background(c, f);
+  const footInk = transparent ? '' : background(c);
   const x0 = transparent ? pad : (W - DW) / 2;
   const y0 = transparent ? pad : (H - DH) / 2 - 40;
 
