@@ -57,6 +57,7 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
   const [noteSeen, setNoteSeen] = useState(false);
   const [notePop, setNotePop] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [creating, setCreating] = useState(false);
   const popBtn = useRef<HTMLButtonElement>(null);
   const overlayTimer = useRef<number>();
 
@@ -206,6 +207,10 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
         return;
       }
       if (sharing) return;
+      if (creating) {
+        if (e.key === 'Escape') setCreating(false);
+        return;
+      }
       if ((e.target as HTMLElement)?.closest?.('input,textarea,[role=slider]')) return;
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
@@ -303,18 +308,16 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
                 <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
               </svg>
             </button>
-            <a
-              href="#/criar"
+            <button
               className="pp-btn is-ghost !h-10 !w-10 !p-0"
               aria-label="Criar a sua"
               title="Criar a sua"
-              // a criação lembra de onde veio: o Voltar dela retorna a este mix
-              onClick={() => sessionStorage.setItem(FROM_MIX_KEY, location.hash)}
+              onClick={() => setCreating(true)}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
                 <path d="M12 5v14M5 12h14" />
               </svg>
-            </a>
+            </button>
           </div>
         </footer>
       </div>
@@ -330,6 +333,28 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
             <button ref={popBtn} className="pp-btn is-signal mt-6 w-full" onClick={closeNote}>
               Bora ouvir
             </button>
+          </div>
+        </div>
+      )}
+      {creating && (
+        // antes de sair do mix: um convite com o texto da home, e só segue se apertar Criar
+        <div className="pp-modal" onClick={(e) => e.target === e.currentTarget && setCreating(false)}>
+          <div className="pp-sheet pp-modal__card pp-fade-in text-center" role="dialog" aria-modal="true" aria-labelledby="pp-create-title">
+            <h2 id="pp-create-title" className="text-[24px] font-medium tracking-[-0.02em]">
+              Qual a vibe de hoje?
+            </h2>
+            <p className="mt-2 text-[16px] leading-[1.5]" style={{ color: 'var(--ink-2)', textWrap: 'balance' }}>
+              Crie seu mix e compartilhe com quem você quiser.
+            </p>
+            <a
+              href="#/criar"
+              className="pp-btn is-signal mt-6 w-full"
+              autoFocus
+              // a criação lembra de onde veio: o Voltar dela retorna a este mix
+              onClick={() => sessionStorage.setItem(FROM_MIX_KEY, location.hash)}
+            >
+              Criar
+            </a>
           </div>
         </div>
       )}
