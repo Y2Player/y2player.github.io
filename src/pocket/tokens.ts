@@ -194,7 +194,7 @@ export const FINISHES: Record<FinishId, Finish> = {
     bodyHi: '#6B5D52',
     bodyLo: '#1E1915',
     edge: '#120E0B',
-    internals: 0.38,
+    internals: 0.12,
     brush: 0,
     see: 'screen',
     pcb: '#1A1A18',
