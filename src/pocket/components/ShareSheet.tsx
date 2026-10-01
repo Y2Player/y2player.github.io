@@ -41,7 +41,10 @@ export function ShareSheet({ mix, onClose }: { mix: Mixtape; onClose: () => void
     // o link vai junto na área de transferência, pronto pro adesivo de link do story
     copyLink();
     setDone('image');
-    if (navigator.canShare?.({ files: [file] })) {
+    // celular: compartilhar do sistema (aparece o Instagram). Computador: baixa o PNG,
+    // porque o menu de compartilhar do Mac não tem a opção de salvar o arquivo.
+    const touch = matchMedia('(pointer: coarse)').matches;
+    if (touch && navigator.canShare?.({ files: [file] })) {
       navigator.share({ files: [file] }).catch(() => {});
       return;
     }
