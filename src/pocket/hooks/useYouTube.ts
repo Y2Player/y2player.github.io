@@ -4,7 +4,6 @@ interface YTPlayer {
   playVideo(): void;
   pauseVideo(): void;
   seekTo(s: number, allow?: boolean): void;
-  loadVideoById(id: string): void;
   cueVideoById(id: string): void;
   getCurrentTime(): number;
   getDuration(): number;
@@ -53,6 +52,11 @@ export function useYouTube(host: RefObject<HTMLDivElement>, opts: Opts) {
   const api = () => (isReady.current ? player.current : null);
   const cbs = useRef(opts);
   cbs.current = opts;
+  // Tocar = preparar (cue) e dar play quando o vídeo estiver pronto.
+  // loadVideoById faz o YouTube pedir anúncio de novo (medido: 3 de 4 com anúncio;
+  // cue + play: 0 de 6), por isso ele não é usado.
+  const cued = useRef<string | undefined>(opts.initialId);
+  const playWhenCued = useRef(false);
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState<YTStatus>('loading');
   const [time, setTime] = useState(0);
@@ -78,6 +82,10 @@ export function useYouTube(host: RefObject<HTMLDivElement>, opts: Opts) {
           },
           onStateChange: (e: { data: number }) => {
             const map: Record<number, YTStatus> = { [-1]: 'idle', 0: 'ended', 1: 'playing', 2: 'paused', 3: 'buffering', 5: 'idle' };
+            if (e.data === 5 && playWhenCued.current) {
+              playWhenCued.current = false;
+              api()?.playVideo();
+            }
             const st = map[e.data] ?? 'idle';
             setStatus(st);
             if (st === 'playing') setDuration(api()?.getDuration() ?? 0);
@@ -117,8 +125,15 @@ export function useYouTube(host: RefObject<HTMLDivElement>, opts: Opts) {
     if (!p) return;
     setTime(0);
     setDuration(0);
-    if (autoplay) p.loadVideoById(id);
-    else p.cueVideoById(id);
+    // já preparado (a primeira faixa nasce assim): só dá play
+    if (autoplay && cued.current === id) {
+      cued.current = undefined;
+      p.playVideo();
+      return;
+    }
+    playWhenCued.current = autoplay;
+    cued.current = autoplay ? undefined : id;
+    p.cueVideoById(id);
   }, []);
 
   const play = useCallback(() => api()?.playVideo(), []);
