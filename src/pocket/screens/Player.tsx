@@ -50,7 +50,7 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
   const [cursor, setCursor] = useState(0);
   const [noteScroll, setNoteScroll] = useState(0);
   const [volume, setVolume] = useState(0.8);
-  const [lit, setLit] = useState(finish.oled);
+  const [lit, setLit] = useState(false); // a luz do visor sempre começa desligada
   const [overlay, setOverlay] = useState<Overlay>(null);
   // bilhete: abre sozinho no primeiro play (se houver); depois fica no MENU
   const [noteSeen, setNoteSeen] = useState(false);
