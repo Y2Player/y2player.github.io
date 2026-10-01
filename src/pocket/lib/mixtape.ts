@@ -118,7 +118,7 @@ export function decodeMixtape(data: string): Mixtape | null {
 // Prefixo "~" marca o comprimido. Links do formato 1 (#/m/…) continuam abrindo.
 
 const SEP = '\u0001';
-const MOOD_CODE: Record<MoodId, string> = { groovy: 'g', romantic: 'r', melancholy: 'm', focus: 'f', flirty: 'p' };
+const MOOD_CODE: Record<MoodId, string> = { groovy: 'g', romantic: 'r', melancholy: 'm', focus: 'f', flirty: 'p', swagger: 's' };
 const CODE_MOOD = Object.fromEntries(Object.entries(MOOD_CODE).map(([k, v]) => [v, k])) as Record<string, MoodId>;
 
 function bytesToB64Url(bytes: Uint8Array) {

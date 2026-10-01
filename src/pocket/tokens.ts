@@ -2,8 +2,8 @@ import type { CSSProperties } from 'react';
 // Mixtape Pocket Player — design tokens
 // Materiais (acabamentos do chassi) + moods (bichinhos) + tipografia.
 
-export type FinishId = 'tangerina' | 'chiclete' | 'bondi' | 'cromo' | 'uva';
-export type MoodId = 'groovy' | 'romantic' | 'melancholy' | 'focus' | 'flirty';
+export type FinishId = 'tangerina' | 'chiclete' | 'bondi' | 'cristal' | 'uva' | 'fume';
+export type MoodId = 'groovy' | 'romantic' | 'melancholy' | 'focus' | 'flirty' | 'swagger';
 
 export interface Finish {
   id: FinishId;
@@ -14,8 +14,11 @@ export interface Finish {
   bodyHi: string;
   bodyLo: string;
   edge: string;
-  internals: number; // quanto do "miolo" aparece através do plástico translúcido
+  internals: number; // quanto do miolo (placa, bateria, cabos) aparece através da carcaça transparente
   brush: number; // escovado do metal
+  // como o miolo atravessa o plástico: filtro de cor (multiply) ou brilho no escuro (screen)
+  see: 'multiply' | 'screen';
+  pcb: string;
   // teclas / roda
   key: string;
   keyHi: string;
@@ -46,8 +49,10 @@ export const FINISHES: Record<FinishId, Finish> = {
     bodyHi: '#FFBD6E',
     bodyLo: '#DD5F0B',
     edge: '#B54A05',
-    internals: 0.17,
+    internals: 0.8,
     brush: 0,
+    see: 'multiply',
+    pcb: '#D9D5CC',
     key: '#FFF6EC',
     keyHi: '#FFFFFF',
     keyLo: '#EFCFAF',
@@ -73,8 +78,10 @@ export const FINISHES: Record<FinishId, Finish> = {
     bodyHi: '#FFA3E3',
     bodyLo: '#DE24A6',
     edge: '#B8168A',
-    internals: 0.16,
+    internals: 0.7,
     brush: 0,
+    see: 'multiply',
+    pcb: '#D9D5CC',
     key: '#FFF1F7',
     keyHi: '#FFFFFF',
     keyLo: '#F0C2D7',
@@ -100,8 +107,10 @@ export const FINISHES: Record<FinishId, Finish> = {
     bodyHi: '#5CCFE3',
     bodyLo: '#0A6680',
     edge: '#085266',
-    internals: 0.22,
+    internals: 0.8,
     brush: 0,
+    see: 'multiply',
+    pcb: '#D9D5CC',
     key: '#EAF7FA',
     keyHi: '#FFFFFF',
     keyLo: '#B2D3DB',
@@ -119,16 +128,18 @@ export const FINISHES: Record<FinishId, Finish> = {
     lcdInk: '#062C38',
     oled: false,
   },
-  cromo: {
-    id: 'cromo',
-    name: 'Cromo',
-    material: 'Alumínio polido',
+  cristal: {
+    id: 'cristal',
+    name: 'Cristal',
+    material: 'Policarbonato cristal',
     body: '#C3C9D0',
     bodyHi: '#F1F4F7',
     bodyLo: '#8A929C',
     edge: '#717983',
-    internals: 0,
-    brush: 0.05,
+    internals: 0.85,
+    brush: 0,
+    see: 'multiply',
+    pcb: '#D9D5CC',
     key: '#DDE2E7',
     keyHi: '#FAFBFC',
     keyLo: '#9CA4AD',
@@ -154,8 +165,10 @@ export const FINISHES: Record<FinishId, Finish> = {
     bodyHi: '#DDBDFF',
     bodyLo: '#8B4FE0',
     edge: '#6E36BE',
-    internals: 0.24,
+    internals: 0.85,
     brush: 0,
+    see: 'multiply',
+    pcb: '#D9D5CC',
     key: '#F1ECFA',
     keyHi: '#FFFFFF',
     keyLo: '#C6BAE2',
@@ -172,6 +185,35 @@ export const FINISHES: Record<FinishId, Finish> = {
     lcdBgLit: '#F3E6FF',
     lcdInk: '#240F45',
     oled: false,
+  },
+  fume: {
+    id: 'fume',
+    name: 'Fumê',
+    material: 'Policarbonato translúcido',
+    body: '#3A302A',
+    bodyHi: '#6B5D52',
+    bodyLo: '#1E1915',
+    edge: '#120E0B',
+    internals: 0.55,
+    brush: 0,
+    see: 'screen',
+    pcb: '#1A1A18',
+    key: '#EDE6DC',
+    keyHi: '#FFFFFF',
+    keyLo: '#C9BFB2',
+    wheel: '#EDE6DC',
+    keyInk: '#5A4A3C',
+    led: '#FFB547',
+    engrave: '#EDE2D3',
+    engraveShadow: 'rgba(0,0,0,.45)',
+    accent: '#FFB547',
+    accentLo: '#C7841C',
+    accentInk: '#2A1A08',
+    bezel: '#0E0B09',
+    lcdBg: '#1B1612',
+    lcdBgLit: '#241C15',
+    lcdInk: '#FFB547',
+    oled: true,
   },
 };
 
@@ -236,7 +278,7 @@ export const MOODS: Record<MoodId, Mood> = {
     line: 'Óculos no rosto, zero notificação. Só levanta quando a música acabar.',
     fx: 'Onda senoidal zen',
     accessory: 'Óculos de visor',
-    finish: 'cromo',
+    finish: 'cristal',
     fps: 2,
     step: 4,
     frames: 4,
@@ -249,6 +291,18 @@ export const MOODS: Record<MoodId, Mood> = {
     fx: 'Brilhos ✦ e beijo',
     accessory: 'Sobrancelha + blush',
     finish: 'uva',
+    fps: 2.7,
+    step: 3,
+    frames: 4,
+  },
+  swagger: {
+    id: 'swagger',
+    name: 'Se Gostando',
+    en: 'Feeling Myself',
+    line: 'Todo todo desde a primeira nota. Não precisa de plateia.',
+    fx: 'Holofote + estalo de dedo',
+    accessory: 'Óculos escuros com brilho',
+    finish: 'fume',
     fps: 2.7,
     step: 3,
     frames: 4,
@@ -275,6 +329,8 @@ export function materialVars(f: Finish): CSSProperties {
     '--edge': f.edge,
     '--internals': f.internals,
     '--brush': f.brush,
+    '--see': f.see,
+    '--pcb': f.pcb,
     '--key': f.key,
     '--key-hi': f.keyHi,
     '--key-lo': f.keyLo,

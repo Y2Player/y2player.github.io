@@ -1,6 +1,7 @@
 import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type React from 'react';
 import { haptic } from '../lib/haptics';
+import { INTERNALS, INTERNALS_H, INTERNALS_W } from '../lib/internals';
 import { materialVars, type Finish } from '../tokens';
 
 export type WheelZone = 'menu' | 'prev' | 'next' | 'back';
@@ -376,6 +377,24 @@ export interface DeviceProps {
 
 const VOL_STEP = 0.05;
 
+// Miolo visto através da carcaça; a opacidade vem de --internals.
+function Internals() {
+  return (
+    <svg className="pp-internals" viewBox={`0 0 ${INTERNALS_W} ${INTERNALS_H}`} preserveAspectRatio="xMidYMin slice" aria-hidden>
+      {INTERNALS.map((p, i) => (
+        <path
+          key={i}
+          d={p.d}
+          fill={p.fill ?? 'none'}
+          stroke={p.stroke}
+          strokeWidth={p.sw}
+          style={p.board ? { fill: 'var(--pcb)' } : undefined}
+        />
+      ))}
+    </svg>
+  );
+}
+
 export function Device(p: DeviceProps) {
   // o volume lido na hora do clique (o repeat do botão segura um closure antigo)
   const vol = useRef(p.volume ?? 0.8);
@@ -395,6 +414,7 @@ export function Device(p: DeviceProps) {
       <SideKey side="right" label="Luz do visor" onPress={() => p.onLight?.(!lit.current)} style={{ top: '19cqw', height: '15cqw' }} />
 
       <div className={`pp-device ${p.framed ? 'is-framed' : ''}`}>
+        <Internals />
         <div className="pp-bezel">
           {p.screen}
           <div className="pp-glass" />

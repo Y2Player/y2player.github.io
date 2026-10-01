@@ -1,9 +1,10 @@
-// Link para a home, no rodapé, no mesmo estilo das legendas do cabeçalho.
-// Sublinhado para deixar claro que é link.
+import { Logo } from './Logo';
+
+// Link para a home, no rodapé: o logo do app.
 export function HomeLink() {
   return (
-    <a href="#/" className="pp-spec underline underline-offset-4" style={{ color: 'var(--ink-2)' }}>
-      Y2Player
+    <a href="#/" aria-label="Y2Player" className="inline-block" style={{ color: 'var(--ink-2)' }}>
+      <Logo />
     </a>
   );
 }

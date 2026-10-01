@@ -1,6 +1,8 @@
 // Imagem para os stories (1080×1920): o aparelho na cor do humor, desenhado
 // direto no canvas a partir dos mesmos tokens e proporções do aparelho real.
 // Canvas em vez de "foto da tela" porque a captura de DOM falha no Safari.
+import { INTERNALS } from './internals';
+import { LOGO_BOX, LOGO_PATHS } from './logo';
 import { composeScene, makeGrid, stamp, type Grid } from './pixels';
 import { lcdText, type Mixtape } from './mixtape';
 import { FINISHES, MOODS } from '../tokens';
@@ -206,7 +208,7 @@ function blob(c: CanvasRenderingContext2D, x: number, y: number, r: number, colo
 }
 
 // Furta-cor em volta da cor oposta à do aparelho (matiz + 180°), para o
-// aparelho saltar do fundo. Aparelho sem cor própria (Cromo) usa o botão.
+// aparelho saltar do fundo. Aparelho sem cor própria (Cristal) usa o botão.
 function background(c: CanvasRenderingContext2D, f: (typeof FINISHES)[keyof typeof FINISHES]): string {
   const [bh, bs] = toHsl(f.body);
   const base = bs < 0.15 ? toHsl(f.accent)[0] : bh;
@@ -288,6 +290,29 @@ export async function renderStory(mix: Mixtape): Promise<Blob> {
   c.strokeStyle = 'rgba(0,0,0,.04)';
   c.lineWidth = 1;
   c.stroke();
+  // miolo através da carcaça transparente
+  if (f.internals > 0) {
+    c.save();
+    rr(c, x0, y0, DW, DH, 7 * u);
+    c.clip();
+    c.translate(x0, y0);
+    c.scale(u, u);
+    c.globalAlpha = f.internals;
+    c.globalCompositeOperation = f.see;
+    for (const p of INTERNALS) {
+      const path = new Path2D(p.d);
+      if (p.fill || p.board) {
+        c.fillStyle = p.board ? f.pcb : p.fill!;
+        c.fill(path);
+      }
+      if (p.stroke) {
+        c.strokeStyle = p.stroke;
+        c.lineWidth = p.sw ?? 0.3;
+        c.stroke(path);
+      }
+    }
+    c.restore();
+  }
   rim(c, x0, y0, DW, DH, 7 * u, 0.28 * u, 0.55);
 
   // visor
@@ -350,14 +375,16 @@ export async function renderStory(mix: Mixtape): Promise<Blob> {
     c.globalAlpha = 1;
   }
 
-  // vidro
-  const glass = cssGradient(c, lx, ly, lcdW, lcdH, 118);
-  glass.addColorStop(0, 'rgba(255,255,255,.16)');
-  glass.addColorStop(0.34, 'rgba(255,255,255,.05)');
-  glass.addColorStop(0.342, 'rgba(255,255,255,0)');
-  glass.addColorStop(1, 'rgba(255,255,255,0)');
-  c.fillStyle = glass;
-  c.fillRect(lx, ly, lcdW, lcdH);
+  // vidro: reflexo diagonal só nos visores claros (na tela escura ele pesa demais)
+  if (!f.oled) {
+    const glass = cssGradient(c, lx, ly, lcdW, lcdH, 118);
+    glass.addColorStop(0, 'rgba(255,255,255,.16)');
+    glass.addColorStop(0.34, 'rgba(255,255,255,.05)');
+    glass.addColorStop(0.342, 'rgba(255,255,255,0)');
+    glass.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = glass;
+    c.fillRect(lx, ly, lcdW, lcdH);
+  }
   c.restore();
   rim(c, lx, ly, lcdW, lcdH, lr, 0.5 * u);
 
@@ -406,11 +433,16 @@ export async function renderStory(mix: Mixtape): Promise<Blob> {
   rr(c, wcx + ps * 0.25 - ps * 0.0875, wcy - ps * 0.29, ps * 0.175, ps * 0.58, ps * 0.03);
   c.fill();
 
-  // rodapé
+  // rodapé: o logo, centrado onde antes ficava o nome escrito
+  const lh = 44;
+  const ls = lh / LOGO_BOX.h;
+  c.save();
+  c.translate(W / 2 - (LOGO_BOX.w * ls) / 2, H - 131 - lh / 2);
+  c.scale(ls, ls);
+  c.translate(-LOGO_BOX.x, -LOGO_BOX.y);
   c.fillStyle = footInk;
-  c.font = `500 30px ${UI}`;
-  c.textBaseline = 'alphabetic';
-  spaced(c, 'Y2PLAYER', W / 2, H - 120, 30 * 0.08, 'center');
+  for (const d of LOGO_PATHS) c.fill(new Path2D(d));
+  c.restore();
 
   return new Promise((res, rej) => cv.toBlob((b) => (b ? res(b) : rej(new Error('png'))), 'image/png'));
 }

@@ -122,6 +122,17 @@
   user-select: none;
   -webkit-user-select: none;
 }
+/* miolo atrás da carcaça transparente: fica entre o plástico e o grão */
+.pp-internals {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: var(--internals, 0);
+  mix-blend-mode: var(--see, multiply);
+}
 /* grão do policarbonato */
 .pp-device::after {
   content: '';
@@ -157,6 +168,10 @@
   background:
     linear-gradient(118deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 34%, transparent 34.2%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 30%);
+}
+/* na tela escura o reflexo diagonal pesa demais: fica só o aro e a luz do alto */
+.pp-lcd.is-oled + .pp-glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 30%);
 }
 
 .pp-lcd {

@@ -104,6 +104,9 @@ const GLASSES = [
   '####..####',
 ];
 
+// óculos escuros: lente cheia, ponte vazada
+const SHADES = ['##########', '####..####', '.##....##.'];
+
 const BROW = ['###'];
 
 const BLANKET = [
@@ -153,6 +156,8 @@ export function moodFrame(mood: MoodId, tick: number): number {
       return Math.floor(tick / 4) % 4;
     case 'flirty':
       return Math.floor(tick / 3) % 4;
+    case 'swagger':
+      return Math.floor(tick / 3) % 4;
   }
 }
 
@@ -172,7 +177,7 @@ export function composeScene(o: SceneOpts): Grid {
   let dx = 0;
   let dy = 0;
   let feet: 'stand' | 'L' | 'R' = 'stand';
-  let eyes: keyof typeof EYE | keyof typeof EYE4 | 'glasses' | 'wink' = 'open';
+  let eyes: keyof typeof EYE | keyof typeof EYE4 | 'glasses' | 'shades' | 'wink' = 'open';
   let mouth: keyof typeof MOUTH | null = 'smile';
   let phones: 'std' | 'big' = 'std';
   let blush = false;
@@ -183,6 +188,19 @@ export function composeScene(o: SceneOpts): Grid {
       const x = o.vu ? 7 + ((i * 7 + 3 + Math.floor(i / 3)) % (W - 14)) : (i * 7 + 3 + Math.floor(i / 3)) % W;
       const y = (((i * 5 + t) % (H + 2)) + H + 2) % (H + 2) - 2;
       stamp(g, ['+', '+'], x, y);
+    }
+  }
+
+  if (o.mood === 'swagger' && !o.sleep) {
+    // holofote: cone pontilhado descendo do alto, só pra ele
+    const c = baseX + 10;
+    for (let y = 0; y < H; y++) {
+      const r = Math.floor(4 + y * 0.55);
+      if (y % 2 === 0) {
+        dot(g, c - r, y, 2);
+        dot(g, c + r, y, 2);
+      }
+      for (let x = c - r + 1; x < c + r; x++) if ((x * 3 + y * 5) % 11 === 0) dot(g, x, y, 2);
     }
   }
 
@@ -234,6 +252,12 @@ export function composeScene(o: SceneOpts): Grid {
         mouth = 'flat';
         break;
       }
+      case 'swagger': {
+        // a cabeça desce no 2 e no 4, junto com o estalo
+        dy = f % 2;
+        mouth = 'smirk';
+        break;
+      }
       case 'flirty': {
         dx = f % 2;
         eyes = f === 1 || f === 2 ? 'wink' : 'open';
@@ -247,6 +271,7 @@ export function composeScene(o: SceneOpts): Grid {
   // acessórios fixos do mood (mesmo pausado)
   if (o.mood === 'melancholy') phones = 'big';
   if (o.mood === 'focus' && !o.sleep) eyes = 'glasses';
+  if (o.mood === 'swagger' && !o.sleep) eyes = 'shades';
   if (o.mood === 'romantic' || o.mood === 'flirty') blush = true;
 
   const cx = baseX + dx;
@@ -289,6 +314,11 @@ export function composeScene(o: SceneOpts): Grid {
       stamp(g, ['##'], cx + 6, eyeY + 1);
       stamp(g, ['##'], cx + 12, eyeY + 1);
     }
+  } else if (eyes === 'shades') {
+    stamp(g, SHADES, cx + 5, eyeY - 1);
+    // brilho atravessando a lente de vez em quando
+    const k = t % 22;
+    if (!idle && k < 10 && k !== 4 && k !== 5) dot(g, cx + 5 + k, eyeY, 0);
   } else if (eyes === 'happy' || eyes === 'calm') {
     stamp(g, EYE4[eyes], cx + 5, eyeY);
     stamp(g, EYE4[eyes], cx + 11, eyeY);
@@ -379,6 +409,19 @@ export function composeScene(o: SceneOpts): Grid {
         dot(g, x, H - 2 + y, 2);
       }
     }
+  }
+
+  if (o.mood === 'swagger' && !idle && !o.sleep) {
+    // estala os dedos no contratempo, alternando a mão
+    if (f === 1) {
+      stamp(g, ['##', '##'], cx + 19, cy + 13);
+      stamp(g, SPARK_X, cx + 22, cy + 10);
+    }
+    if (f === 3) {
+      stamp(g, ['##', '##'], cx - 1, cy + 13);
+      stamp(g, SPARK_X, cx - 4, cy + 10);
+    }
+    stamp(g, NOTE, baseX + 23, baseY + 7 - Math.floor((t % 18) / 3));
   }
 
   if (o.mood === 'flirty' && !idle && !o.sleep) {
