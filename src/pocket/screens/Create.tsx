@@ -18,10 +18,14 @@ import { FINISHES, MOOD_LIST, finishForMood, finishVars, type MoodId } from '../
 
 type SlotStatus = 'empty' | 'loading' | 'ok' | 'invalid' | 'notfound';
 interface Slot {
+  key: string; // identidade fixa: a posição muda quando a pessoa reordena
   url: string;
   status: SlotStatus;
   track?: Track;
 }
+
+let slotSeq = 0;
+const newSlot = (url = '', status: SlotStatus = 'empty'): Slot => ({ key: `s${++slotSeq}`, url, status });
 
 const STEP_TITLES = ['Qual bichinho vai junto?', 'Escolhe pelo menos 2 músicas.', 'Agora o bilhete'];
 
@@ -29,7 +33,7 @@ export function CreateWizard() {
   const tick = useTicker();
   const [step, setStep] = useState(0);
   const [mood, setMood] = useState<MoodId>('groovy');
-  const [slots, setSlots] = useState<Slot[]>(() => Array.from({ length: MIN_TRACKS }, () => ({ url: '', status: 'empty' })));
+  const [slots, setSlots] = useState<Slot[]>(() => Array.from({ length: MIN_TRACKS }, () => newSlot()));
   const [focusRow, setFocusRow] = useState(0);
   const [title, setTitle] = useState('');
   const [from, setFrom] = useState('');
@@ -41,7 +45,7 @@ export function CreateWizard() {
   const [vol, setVol] = useState(0.7);
   const [previewPlaying, setPreviewPlaying] = useState(true);
   const [override, setOverride] = useState<'now' | 'note' | 'list' | null>(null);
-  const timers = useRef<number[]>([]);
+  const timers = useRef(new Map<string, number>());
   // a cor do aparelho vem do humor
   const finish = finishForMood(mood);
   const finishId = finish.id;
@@ -55,17 +59,19 @@ export function CreateWizard() {
   }, [link]);
 
   const setSlotUrl = (i: number, url: string) => {
+    const key = slots[i]?.key;
+    if (!key) return;
     setLink(null);
-    setSlots((s) => s.map((x, j) => (j === i ? { url, status: url.trim() ? 'loading' : 'empty' } : x)));
-    window.clearTimeout(timers.current[i]);
+    setSlots((s) => s.map((x) => (x.key === key ? { ...x, url, status: url.trim() ? 'loading' : 'empty', track: undefined } : x)));
+    window.clearTimeout(timers.current.get(key));
     if (!url.trim()) return;
-    timers.current[i] = window.setTimeout(() => validate(i, url), 350);
+    timers.current.set(key, window.setTimeout(() => validate(key, i, url), 350));
   };
 
-  const validate = (i: number, url: string) => {
+  const validate = (key: string, i: number, url: string) => {
     const id = parseYouTubeId(url);
     const update = (patch: Partial<Slot>) =>
-      setSlots((s) => s.map((x, j) => (j === i && x.url === url ? { ...x, ...patch } : x)));
+      setSlots((s) => s.map((x) => (x.key === key && x.url === url ? { ...x, ...patch } : x)));
     if (!id) return update({ status: 'invalid', track: undefined });
     fetchTrackInfo(id)
       .then((track) => {
@@ -84,17 +90,30 @@ export function CreateWizard() {
     haptic('key');
     setLink(null);
     setFocusRow(slots.length);
-    setSlots((s) => [...s, { url: '', status: 'empty' }]);
+    setSlots((s) => [...s, newSlot()]);
   };
 
   const removeSlot = (i: number) => {
     if (slots.length <= MIN_TRACKS) return;
     haptic('key');
     setLink(null);
-    timers.current.forEach((t) => window.clearTimeout(t));
-    timers.current = [];
+    const key = slots[i]?.key;
+    if (key) window.clearTimeout(timers.current.get(key));
     setFocusRow(0);
     setSlots((s) => s.filter((_, j) => j !== i));
+  };
+
+  // arrastar para reordenar: troca a faixa de lugar com a vizinha
+  const moveSlot = (from: number, to: number) => {
+    if (to < 0 || to >= slots.length || from === to) return;
+    setLink(null);
+    setFocusRow(to);
+    setSlots((s) => {
+      const next = [...s];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
   };
 
   const paste = async (i: number) => {
@@ -262,6 +281,7 @@ export function CreateWizard() {
                 paste={paste}
                 addSlot={addSlot}
                 removeSlot={removeSlot}
+                moveSlot={moveSlot}
                 okCount={okCount}
               />
             )}
@@ -385,6 +405,7 @@ function StepTracks({
   paste,
   addSlot,
   removeSlot,
+  moveSlot,
   okCount,
 }: {
   slots: Slot[];
@@ -393,9 +414,59 @@ function StepTracks({
   paste: (i: number) => void;
   addSlot: () => void;
   removeSlot: (i: number) => void;
+  moveSlot: (from: number, to: number) => void;
   okCount: number;
 }) {
   const canRemove = slots.length > MIN_TRACKS;
+
+  // Arrastar pela alça: o cartão segue o dedo e troca de lugar ao passar da metade do vizinho.
+  const items = useRef(new Map<string, HTMLDivElement>());
+  const order = useRef(slots);
+  order.current = slots;
+  const st = useRef({ key: '', startY: 0, id: -1 });
+  const [drag, setDrag] = useState<{ key: string; dy: number } | null>(null);
+  const GAP = 12;
+
+  const onDown = (e: React.PointerEvent, key: string) => {
+    e.preventDefault();
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* ponteiro já liberado */
+    }
+    st.current = { key, startY: e.clientY, id: e.pointerId };
+    setDrag({ key, dy: 0 });
+    haptic('key');
+  };
+  const onMove = (e: React.PointerEvent) => {
+    const s = st.current;
+    if (!s.key || e.pointerId !== s.id) return;
+    let dy = e.clientY - s.startY;
+    const list = order.current;
+    const i = list.findIndex((x) => x.key === s.key);
+    const h = (k?: string) => (k ? (items.current.get(k)?.getBoundingClientRect().height ?? 0) + GAP : 0);
+    const below = h(list[i + 1]?.key);
+    const above = h(list[i - 1]?.key);
+    if (below && dy > below / 2) {
+      moveSlot(i, i + 1);
+      order.current = [...list.slice(0, i), list[i + 1], list[i], ...list.slice(i + 2)];
+      s.startY += below;
+      dy -= below;
+      haptic('tick');
+    } else if (above && dy < -above / 2) {
+      moveSlot(i, i - 1);
+      order.current = [...list.slice(0, i - 1), list[i], list[i - 1], ...list.slice(i + 1)];
+      s.startY -= above;
+      dy += above;
+      haptic('tick');
+    }
+    setDrag({ key: s.key, dy });
+  };
+  const onUp = (e: React.PointerEvent) => {
+    if (e.pointerId !== st.current.id) return;
+    st.current = { key: '', startY: 0, id: -1 };
+    setDrag(null);
+  };
   return (
     <>
       <p className="mt-2 text-[15px] leading-[1.5]" style={{ color: 'var(--ink-2)' }}>
@@ -403,8 +474,42 @@ function StepTracks({
       </p>
       <div className="mt-5 flex flex-col gap-3">
         {slots.map((s, i) => (
-          <div key={i} className="rounded-[16px] p-3" style={{ background: 'var(--paper-2)', boxShadow: 'inset 0 0 0 1px var(--line)' }}>
+          <div
+            key={s.key}
+            ref={(el) => {
+              if (el) items.current.set(s.key, el);
+              else items.current.delete(s.key);
+            }}
+            className="relative rounded-[16px] p-3"
+            style={{
+              background: 'var(--paper-2)',
+              boxShadow: drag?.key === s.key ? 'inset 0 0 0 1.5px var(--ink-3)' : 'inset 0 0 0 1px var(--line)',
+              transform: drag?.key === s.key ? `translateY(${drag.dy}px) scale(1.02)` : undefined,
+              zIndex: drag?.key === s.key ? 5 : undefined,
+              transition: drag?.key === s.key ? 'box-shadow 120ms' : 'transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1)',
+            }}
+          >
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="pp-drag flex h-10 w-6 flex-none items-center justify-center"
+                style={{ color: 'var(--ink-3)', cursor: drag?.key === s.key ? 'grabbing' : 'grab' }}
+                aria-label={`Mover faixa ${i + 1} (setas para cima e para baixo)`}
+                onPointerDown={(e) => onDown(e, s.key)}
+                onPointerMove={onMove}
+                onPointerUp={onUp}
+                onPointerCancel={onUp}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowUp') (e.preventDefault(), moveSlot(i, i - 1));
+                  if (e.key === 'ArrowDown') (e.preventDefault(), moveSlot(i, i + 1));
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+                  <rect x="2" y="4" width="12" height="1.6" rx="0.8" />
+                  <rect x="2" y="7.2" width="12" height="1.6" rx="0.8" />
+                  <rect x="2" y="10.4" width="12" height="1.6" rx="0.8" />
+                </svg>
+              </button>
               <span className="pp-spec w-6 flex-none text-center" style={{ color: 'var(--ink-3)' }}>
                 {String(i + 1).padStart(2, '0')}
               </span>
@@ -443,8 +548,7 @@ function StepTracks({
                 </button>
               )}
             </div>
-            <div className="mt-2 flex min-h-[36px] items-center gap-3 pl-8">
-              <span className={`pp-status-led ${s.status === 'ok' ? 'ok' : s.status === 'loading' ? 'load' : s.status === 'empty' ? '' : 'err'}`} />
+            <div className="mt-2 flex min-h-[36px] items-center gap-3 pl-16">
               {s.status === 'ok' && s.track ? (
                 <>
                   <img src={thumb(s.track.id)} alt="" className="h-9 w-12 flex-none rounded-[6px] object-cover" loading="lazy" />
@@ -571,7 +675,6 @@ function StepNote(p: {
           id="pp-result"
           className="pp-fade-in rounded-[18px] p-4" style={{ background: 'var(--paper-2)', boxShadow: 'inset 0 0 0 1px var(--line)' }}>
           <div className="flex items-center gap-2">
-            <span className="pp-status-led ok" />
             <span className="text-[15px] font-medium">Tá gravado. Agora é com você.</span>
           </div>
           <div className="mt-3 flex items-center gap-2">
