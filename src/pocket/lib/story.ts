@@ -408,12 +408,15 @@ export async function renderStory(mix: Mixtape, { transparent = false } = {}): P
   c.font = `${2.1 * u}px ${PX}`;
   c.textBaseline = 'top';
   c.textAlign = 'left';
-  c.fillText(`${String(mix.tracks.length).padStart(2, '0')} FAIXAS`, px0 + iconH * 1.3, cy + 0.1 * u);
-  // de onde veio: o endereço no meio da barra, pra quem vê o story
+  const faixas = `${String(mix.tracks.length).padStart(2, '0')} FAIXAS`;
+  c.fillText(faixas, px0 + iconH * 1.3, cy + 0.1 * u);
+  const battX = px0 + pw - 1.8 * u * 1.75;
+  // de onde veio: o endereço no meio do vão entre as faixas e a bateria (mesmo respiro dos dois lados)
+  const gapL = px0 + iconH * 1.3 + c.measureText(faixas).width;
   c.textAlign = 'center';
-  c.fillText('Y2PLAYER.COM', lx + lcdW / 2, cy + 0.1 * u);
+  c.fillText('Y2PLAYER.COM', (gapL + battX) / 2, cy + 0.1 * u);
   c.textAlign = 'left';
-  drawGrid(c, icon(BATT), px0 + pw - 1.8 * u * 1.75, cy + 0.1 * u, (1.8 * u) / 4, ink, f.oled, 0);
+  drawGrid(c, icon(BATT), battX, cy + 0.1 * u, (1.8 * u) / 4, ink, f.oled, 0);
   cy += 3.2 * u + 1.8 * u;
   c.globalAlpha = 0.18;
   c.fillRect(px0, cy, pw, 0.35 * u);
