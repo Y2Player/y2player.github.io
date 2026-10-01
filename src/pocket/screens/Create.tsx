@@ -14,7 +14,7 @@ import {
   type Mixtape,
   type Track,
 } from '../lib/mixtape';
-import { FINISHES, MOODS, MOOD_LIST, finishForMood, finishVars, type MoodId } from '../tokens';
+import { FINISHES, MOOD_LIST, finishForMood, finishVars, type MoodId } from '../tokens';
 
 type SlotStatus = 'empty' | 'loading' | 'ok' | 'invalid' | 'notfound';
 interface Slot {
@@ -390,10 +390,6 @@ function StepMood({ mood, setMood, tick }: { mood: MoodId; setMood: (m: MoodId) 
           );
         })}
       </div>
-      {/* no computador, só a primeira frase do escolhido; no celular, sem descrição */}
-      <p className="mt-3 hidden text-[15px] leading-snug lg:block" style={{ color: 'var(--ink-2)' }}>
-        {MOODS[mood].line.split(/(?<=[.!?])\s/)[0]}
-      </p>
     </>
   );
 }

@@ -21,7 +21,8 @@ function luminance(hex: string) {
   });
   return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
 }
-function readableInk(bg: string) {
+// tinta que lê bem sobre a cor do plástico (botões pintados com o aparelho)
+export function readableInk(bg: string) {
   const l = luminance(bg);
   const vsDark = (l + 0.05) / (luminance(INK_DARK) + 0.05);
   const vsLight = (luminance(INK_LIGHT) + 0.05) / (l + 0.05);

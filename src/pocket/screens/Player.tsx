@@ -3,6 +3,7 @@ import { Device, type WheelZone } from '../components/Hardware';
 import { HomeLink } from '../components/HomeLink';
 import { ShareSheet } from '../components/ShareSheet';
 import { FROM_MIX_KEY } from './Create';
+import { readableInk } from './Landing';
 import {
   LcdScreen,
   MENU_ITEMS,
@@ -330,7 +331,12 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
             <p className="mt-3 whitespace-pre-wrap break-words text-[17px] leading-[1.5]" style={{ color: 'var(--ink-2)' }}>
               {mix.note}
             </p>
-            <button ref={popBtn} className="pp-btn is-signal mt-6 w-full" onClick={closeNote}>
+            <button
+              ref={popBtn}
+              className="pp-btn mt-6 w-full"
+              style={{ background: finish.body, color: readableInk(finish.body) }}
+              onClick={closeNote}
+            >
               Bora ouvir
             </button>
           </div>
@@ -341,14 +347,15 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
         <div className="pp-modal" onClick={(e) => e.target === e.currentTarget && setCreating(false)}>
           <div className="pp-sheet pp-modal__card pp-fade-in text-center" role="dialog" aria-modal="true" aria-labelledby="pp-create-title">
             <h2 id="pp-create-title" className="text-[24px] font-medium tracking-[-0.02em]">
-              Qual a vibe de hoje?
+              Agora é a sua vez!
             </h2>
             <p className="mt-2 text-[16px] leading-[1.5]" style={{ color: 'var(--ink-2)', textWrap: 'balance' }}>
               Crie seu mix e compartilhe com quem você quiser.
             </p>
             <a
               href="#/criar"
-              className="pp-btn is-signal mt-6 w-full"
+              className="pp-btn mt-6 w-full"
+              style={{ background: finish.body, color: readableInk(finish.body) }}
               autoFocus
               // a criação lembra de onde veio: o Voltar dela retorna a este mix
               onClick={() => sessionStorage.setItem(FROM_MIX_KEY, location.hash)}
