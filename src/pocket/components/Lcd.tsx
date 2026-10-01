@@ -311,12 +311,12 @@ export function ScreenList({
   );
 }
 
-// MENU da roda: um único lugar para tocando / faixas / bilhete.
+// MENU da roda: um único lugar para tocando / faixas / recado.
 export type MenuItem = 'now' | 'list' | 'note';
 export const MENU_ITEMS: { id: MenuItem; label: string; icon: string }[] = [
   { id: 'now', label: 'TOCANDO AGORA', icon: 'play' },
   { id: 'list', label: 'FAIXAS', icon: 'note' },
-  { id: 'note', label: 'BILHETE', icon: 'heart' },
+  { id: 'note', label: 'RECADO', icon: 'heart' },
 ];
 
 export function ScreenMenu({ cursor, title }: { cursor: number; title?: string }) {
@@ -354,7 +354,7 @@ export function ScreenNote({ to, from, note, scroll = 0 }: { to: string; from: s
         left={
           <>
             <PxIcon name="heart" size={1.9} />
-            <span>BILHETE</span>
+            <span>RECADO</span>
           </>
         }
       />

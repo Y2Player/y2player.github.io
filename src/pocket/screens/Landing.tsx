@@ -71,9 +71,8 @@ export function Landing() {
         <main className="flex h-full flex-col gap-6 pt-6 pb-[calc(20px+env(safe-area-inset-bottom))] lg:grid lg:grid-cols-[1fr_400px] lg:items-center lg:gap-20 lg:py-10">
           <div className="order-2 flex-none text-center lg:order-1 lg:text-left">
             <h1 className="text-[30px] font-medium leading-[1.05] tracking-[-0.025em] sm:text-[48px]">Qual a vibe de hoje?</h1>
-            <p className="mx-auto mt-3 max-w-[420px] sm:mt-5 text-[17px] leading-[1.5] lg:mx-0" style={{ color: 'var(--ink-2)' }}>
-              Crie seu mix com até 5 músicas, escreva 1 bilhete levemente cafona e escolha 1 bichinho com mais
-              sentimento que você. Depois é só mandar pra quem você quiser.
+            <p className="mx-auto mt-3 max-w-[420px] sm:mt-5 text-[17px] leading-[1.5] lg:mx-0" style={{ color: 'var(--ink-2)', textWrap: 'balance' }}>
+              Crie seu mix e compartilhe com quem você quiser.
             </p>
             <div className="mt-5 flex flex-col items-center gap-3 sm:mt-8 sm:flex-row sm:justify-center lg:justify-start">
               <a

@@ -27,7 +27,7 @@ interface Slot {
 let slotSeq = 0;
 const newSlot = (url = '', status: SlotStatus = 'empty'): Slot => ({ key: `s${++slotSeq}`, url, status });
 
-const STEP_TITLES = ['Qual bichinho vai junto?', 'Escolhe pelo menos 2 músicas.', 'Agora o bilhete'];
+const STEP_TITLES = ['Escolha um bichinho', 'Defina as músicas', 'Agora um recado'];
 
 export function CreateWizard() {
   const tick = useTicker();
@@ -237,7 +237,18 @@ export function CreateWizard() {
         {/* aparelho: fica com a altura que sobra e encolhe pra caber */}
         <div className="flex min-h-0 flex-1 flex-col lg:h-[100dvh]">
           <header className="flex h-12 flex-none items-center justify-between px-5 lg:h-14 lg:px-0">
-            <a href="#/" className="pp-spec" style={{ color: 'var(--ink-2)' }}>
+            {/* o único voltar: volta uma etapa; na primeira (ou já gravado), volta pra home */}
+            <a
+              href="#/"
+              className="pp-spec"
+              style={{ color: 'var(--ink-2)' }}
+              onClick={(e) => {
+                if (step > 0 && !link) {
+                  e.preventDefault();
+                  setStep((s) => s - 1);
+                }
+              }}
+            >
               ← Voltar
             </a>
           </header>
@@ -301,11 +312,6 @@ export function CreateWizard() {
 
           {/* barra de ação: sempre no pé da folha */}
           <div className="flex flex-none gap-3 pt-4 lg:pt-6">
-            {step > 0 && !link && (
-              <button className="pp-btn is-ghost" onClick={() => setStep((s) => s - 1)}>
-                Voltar
-              </button>
-            )}
             {step < 2 && (
               <button className="pp-btn flex-1" disabled={!canNext} onClick={() => (haptic('key'), setStep((s) => s + 1))}>
                 {step === 1 && !canNext ? tracksCta : 'Avançar'}
@@ -374,9 +380,9 @@ function StepMood({ mood, setMood, tick }: { mood: MoodId; setMood: (m: MoodId) 
           );
         })}
       </div>
-      {/* a frase só do escolhido, pra lista caber inteira */}
-      <p className="mt-3 min-h-[2.9em] text-[14px] leading-snug lg:text-[15px]" style={{ color: 'var(--ink-2)' }}>
-        {MOODS[mood].line}
+      {/* no computador, só a primeira frase do escolhido; no celular, sem descrição */}
+      <p className="mt-3 hidden text-[15px] leading-snug lg:block" style={{ color: 'var(--ink-2)' }}>
+        {MOODS[mood].line.split(/(?<=[.!?])\s/)[0]}
       </p>
     </>
   );
@@ -464,7 +470,7 @@ function StepTracks({
   return (
     <>
       <p className="mt-2 text-[15px] leading-[1.5]" style={{ color: 'var(--ink-2)' }}>
-        Cola os links do youtube.
+        Cola o link do youtube.
       </p>
       <div className="mt-4 flex flex-col gap-2">
         {slots.map((s, i) => (
@@ -651,7 +657,7 @@ function StepNote(p: {
         </div>
         <label className="block">
           <div className="mb-1.5 flex justify-between text-[14px] font-medium">
-            Bilhete <Counter n={p.note.length} max={LIMITS.note} />
+            Recado <Counter n={p.note.length} max={LIMITS.note} />
           </div>
           <textarea
             className="pp-field min-h-[96px] resize-none leading-[1.45] lg:min-h-[132px]"

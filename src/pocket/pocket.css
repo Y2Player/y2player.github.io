@@ -674,14 +674,14 @@
   min-height: 0;
   overflow: hidden;
 }
-/* proporção do aparelho ≈ 1:1.56; 132px = cabeçalho + dica + rodapé */
+/* proporção do aparelho ≈ 1:1.56; 140px = topo com o logo + rodapé com os botões */
 .pp-player-device {
-  width: min(calc(100vw - 24px), 420px, calc((100dvh - 132px) / 1.6));
+  width: min(calc(100vw - 24px), 420px, calc((100dvh - 140px) / 1.6));
 }
 /* na web o aparelho fica menor que no celular (~20% abaixo dos 420px) */
 @media (min-width: 768px) {
   .pp-player-device {
-    width: min(338px, calc((100dvh - 132px) / 1.56));
+    width: min(338px, calc((100dvh - 140px) / 1.56));
   }
 }
 
@@ -747,7 +747,7 @@
   box-shadow: inset 0 0 0 1.5px var(--ink);
 }
 
-/* pop-up do bilhete no player: papel por cima do aparelho */
+/* pop-up do recado no player: papel por cima do aparelho */
 .pp-modal {
   position: fixed;
   inset: 0;

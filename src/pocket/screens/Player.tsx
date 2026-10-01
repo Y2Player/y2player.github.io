@@ -52,7 +52,7 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
   const [volume, setVolume] = useState(0.8);
   const [lit, setLit] = useState(false); // a luz do visor sempre começa desligada
   const [overlay, setOverlay] = useState<Overlay>(null);
-  // bilhete: abre sozinho no primeiro play (se houver); depois fica no MENU
+  // recado: abre sozinho no primeiro play (se houver); depois fica no MENU
   const [noteSeen, setNoteSeen] = useState(false);
   const [notePop, setNotePop] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -220,14 +220,12 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
     return () => window.removeEventListener('keydown', h);
   });
 
-  // fechar o bilhete já dá o play
+  // fechar o recado já dá o play
   const closeNote = () => {
     setNotePop(false);
     togglePlay();
   };
 
-  const who = mix.from ? `De ${mix.from}` : 'Alguém mandou';
-  const whom = mix.to ? `pra ${mix.to}` : 'pra você';
 
   const screen = (
     <LcdScreen lit={lit} oled={finish.oled}>
@@ -268,20 +266,10 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
   return (
     <div className="pp-root pp-stage pp-player" style={finishVars(finish)}>
       <div className="mx-auto flex h-[100dvh] max-w-[480px] flex-col items-center overflow-hidden px-3">
-        <header className="flex h-12 w-full items-center justify-between gap-3 px-2">
-          <span className="pp-spec min-w-0 truncate" style={{ color: 'var(--ink-2)' }}>
-            {demo ? 'Demo · ' : ''}
-            {who} {whom}
-          </span>
-          <button
-            className="pp-spec flex-none underline underline-offset-4"
-            style={{ color: 'var(--ink-2)', background: 'none', border: 0, padding: 0, cursor: 'pointer' }}
-            onClick={() => setSharing(true)}
-          >
-            Compartilhar
-          </button>
+        {/* topo: só o logo, centralizado, que volta pro início */}
+        <header className="flex h-14 w-full flex-none items-center justify-center pt-[env(safe-area-inset-top)]">
+          <HomeLink />
         </header>
-
         <main className="flex min-h-0 w-full flex-1 flex-col items-center justify-center">
           <div className="pp-cq pp-arrive pp-player-device">
             <Device
@@ -299,19 +287,31 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
           </div>
         </main>
 
-        {/* rodapé espelha o cabeçalho: home à esquerda, convite à direita */}
-        <footer className="flex h-14 w-full items-center justify-between gap-3 px-2">
-          <HomeLink />
-          <a href="#/criar" className="pp-spec underline-offset-4 hover:underline" style={{ color: 'var(--ink-2)' }}>
-            Gostou? Faz a sua →
-          </a>
+        {/* rodapé: compartilhar e criar lado a lado */}
+        <footer className="flex w-full flex-none justify-center pb-[calc(14px+env(safe-area-inset-bottom))] pt-3">
+          <div className="flex items-center justify-center gap-2">
+            <button className="pp-btn is-ghost !h-10 !gap-2 !px-4 !text-[14px]" onClick={() => setSharing(true)}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M12 3v12" />
+                <path d="m7 8 5-5 5 5" />
+                <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+              </svg>
+              Compartilhar
+            </button>
+            <a href="#/criar" className="pp-btn is-ghost !h-10 !gap-2 !px-4 !text-[14px]">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Criar a sua
+            </a>
+          </div>
         </footer>
       </div>
       {notePop && (
         <div className="pp-modal" onClick={(e) => e.target === e.currentTarget && closeNote()}>
           <div className="pp-sheet pp-modal__card pp-fade-in" role="dialog" aria-modal="true" aria-labelledby="pp-note-title">
             <h2 id="pp-note-title" className="text-[22px] font-medium tracking-[-0.01em]">
-              {mix.from ? `${mix.from} deixou um bilhete` : 'Deixaram um bilhete pra você'}
+              {mix.from ? `${mix.from} deixou um recado` : 'Deixaram um recado pra você'}
             </h2>
             <p className="mt-3 whitespace-pre-wrap break-words text-[17px] leading-[1.5]" style={{ color: 'var(--ink-2)' }}>
               {mix.note}
