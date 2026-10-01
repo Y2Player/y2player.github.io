@@ -290,13 +290,17 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
         {/* rodapé: compartilhar e criar lado a lado */}
         <footer className="flex w-full flex-none justify-center pb-[calc(14px+env(safe-area-inset-bottom))] pt-3">
           <div className="flex items-center justify-center gap-2">
-            <button className="pp-btn is-ghost !h-10 !gap-2 !px-4 !text-[14px]" onClick={() => setSharing(true)}>
+            <button
+              className="pp-btn is-ghost !h-10 !w-10 !p-0"
+              onClick={() => setSharing(true)}
+              aria-label="Compartilhar"
+              title="Compartilhar"
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M12 3v12" />
                 <path d="m7 8 5-5 5 5" />
                 <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
               </svg>
-              Compartilhar
             </button>
             <a href="#/criar" className="pp-btn is-ghost !h-10 !gap-2 !px-4 !text-[14px]">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
