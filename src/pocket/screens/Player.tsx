@@ -302,11 +302,10 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
                 <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
               </svg>
             </button>
-            <a href="#/criar" className="pp-btn is-ghost !h-10 !gap-2 !px-4 !text-[14px]">
+            <a href="#/criar" className="pp-btn is-ghost !h-10 !w-10 !p-0" aria-label="Criar a sua" title="Criar a sua">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
                 <path d="M12 5v14M5 12h14" />
               </svg>
-              Criar a sua
             </a>
           </div>
         </footer>
