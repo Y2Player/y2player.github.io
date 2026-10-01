@@ -264,13 +264,14 @@ export async function renderStory(mix: Mixtape): Promise<Blob> {
   const key = (side: 'l' | 'r', top: number, h: number) => {
     const kx = side === 'l' ? x0 - 1.3 * u : x0 + DW - 1.3 * u;
     const g = c.createLinearGradient(kx, 0, kx + 2.6 * u, 0);
-    const dark = 'rgba(0,0,0,.1)';
-    const light = 'rgba(255,255,255,.35)';
+    const dark = 'rgba(0,0,0,.14)';
+    const light = 'rgba(255,255,255,.4)';
     g.addColorStop(0, side === 'l' ? dark : light);
     g.addColorStop(0.45, 'rgba(0,0,0,0)');
     g.addColorStop(1, side === 'l' ? light : dark);
     rr(c, kx, y0 + top * u, 2.6 * u, h * u, side === 'l' ? [1.2 * u, 0, 0, 1.2 * u] : [0, 1.2 * u, 1.2 * u, 0]);
-    c.fillStyle = f.wheel;
+    // mesma cor do play
+    c.fillStyle = f.accent;
     c.fill();
     c.fillStyle = g;
     c.fill();
