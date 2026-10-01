@@ -390,8 +390,8 @@ export function Device(p: DeviceProps) {
 
   return (
     <div className={`pp-shell ${p.className ?? ''}`} style={{ ...materialVars(p.finish), ...p.style }}>
-      <SideKey side="left" label="Aumentar volume" repeat onPress={() => nudge(VOL_STEP)} style={{ top: '20cqw', height: '13cqw' }} />
-      <SideKey side="left" label="Diminuir volume" repeat onPress={() => nudge(-VOL_STEP)} style={{ top: '35.5cqw', height: '11cqw' }} />
+      <SideKey side="left" label="Aumentar volume" repeat onPress={() => nudge(VOL_STEP)} style={{ top: '20cqw', height: '12cqw' }} />
+      <SideKey side="left" label="Diminuir volume" repeat onPress={() => nudge(-VOL_STEP)} style={{ top: '34.5cqw', height: '12cqw' }} />
       <SideKey side="right" label="Luz do visor" onPress={() => p.onLight?.(!lit.current)} style={{ top: '19cqw', height: '15cqw' }} />
 
       <div className={`pp-device ${p.framed ? 'is-framed' : ''}`}>

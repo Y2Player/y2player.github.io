@@ -47,7 +47,7 @@ export function CreateWizard() {
   const finishId = finish.id;
 
   useEffect(() => {
-    document.title = 'Nova mixtape · Y2Player';
+    document.title = 'Novo mix · Y2Player';
   }, []);
   useEffect(() => setOverride(null), [step]);
   useEffect(() => {
@@ -121,7 +121,7 @@ export function CreateWizard() {
       v: 1,
       mood,
       finish: finishId,
-      title: title.trim() || 'Uma mixtape pra você',
+      title: title.trim() || 'Um mix pra você',
       from: from.trim(),
       to: to.trim(),
       note: note.trim(),
@@ -159,7 +159,7 @@ export function CreateWizard() {
         mood={mood}
         tick={tick}
         playing={previewPlaying}
-        track={firstTrack ?? { id: '', title: title || 'Sua mixtape', author: 'Faixa 01' }}
+        track={firstTrack ?? { id: '', title: title || 'Seu mix', author: 'Faixa 01' }}
         index={0}
         total={Math.max(okCount, 1)}
         time={fakeT}
@@ -298,7 +298,7 @@ export function CreateWizard() {
             )}
             {step === 2 && !link && (
               <button className="pp-btn is-signal flex-1" onClick={generate}>
-                Gravar mixtape
+                Gravar mix
               </button>
             )}
             {step === 2 && link && (
@@ -531,7 +531,7 @@ function StepNote(p: {
       <div className="mt-5 flex flex-col gap-4">
         <label className="block">
           <div className="mb-1.5 flex justify-between text-[14px] font-medium">
-            Nome da mixtape <Counter n={p.title.length} max={LIMITS.title} />
+            Nome do mix <Counter n={p.title.length} max={LIMITS.title} />
           </div>
           <input
             className="pp-field"
@@ -572,7 +572,7 @@ function StepNote(p: {
           className="pp-fade-in rounded-[18px] p-4" style={{ background: 'var(--paper-2)', boxShadow: 'inset 0 0 0 1px var(--line)' }}>
           <div className="flex items-center gap-2">
             <span className="pp-status-led ok" />
-            <span className="text-[15px] font-medium">Tá gravada. Agora é com você.</span>
+            <span className="text-[15px] font-medium">Tá gravado. Agora é com você.</span>
           </div>
           <div className="mt-3 flex items-center gap-2">
             <div
@@ -586,7 +586,7 @@ function StepNote(p: {
                 className="pp-btn is-ghost !h-11 !w-11 flex-none !p-0"
                 aria-label="Compartilhar"
                 title="Compartilhar"
-                onClick={() => navigator.share({ title: p.title || 'Uma mixtape pra você', url: p.link! }).catch(() => {})}
+                onClick={() => navigator.share({ title: p.title || 'Um mix pra você', url: p.link! }).catch(() => {})}
               >
                 <IconShare />
               </button>

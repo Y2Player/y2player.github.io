@@ -388,7 +388,7 @@ export function ScreenBoot({
 }) {
   const grid = useMemo(() => {
     const g = composeScene({ mood, tick, playing: false, sleep: true, w: 52, h: 27, charX: 16 });
-    stampText(g, 'MIXTAPE', 12, 0);
+    stampText(g, 'MIX', 20, 0);
     return g;
   }, [mood, tick]);
   return (
@@ -420,7 +420,7 @@ export function ScreenBoot({
   );
 }
 
-export function ScreenSaved({ mood, tick, count, label = 'GRAVADA' }: { mood: MoodId; tick: number; count: number; label?: string }) {
+export function ScreenSaved({ mood, tick, count, label = 'GRAVADO' }: { mood: MoodId; tick: number; count: number; label?: string }) {
   return (
     <>
       <StatusBar
@@ -435,7 +435,7 @@ export function ScreenSaved({ mood, tick, count, label = 'GRAVADA' }: { mood: Mo
         <MascotScene mood={mood} tick={tick} playing celebrate w={44} h={22} charX={12} />
       </div>
       <div style={{ textAlign: 'center', marginTop: 'auto' }}>
-        <div className="pp-lcd-title">MIXTAPE {label}</div>
+        <div className="pp-lcd-title">MIX {label}</div>
         <div className="pp-lcd-sub" style={{ marginTop: '1.2cqw' }}>
           {count} FAIXAS · LINK PRONTO
         </div>

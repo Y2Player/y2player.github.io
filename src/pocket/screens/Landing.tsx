@@ -71,7 +71,7 @@ export function Landing() {
           <div className="order-2 text-center lg:order-1 lg:text-left">
             <h1 className="text-[34px] font-medium leading-[1.05] tracking-[-0.025em] sm:text-[48px]">Qual a vibe de hoje?</h1>
             <p className="mx-auto mt-5 max-w-[420px] text-[17px] leading-[1.5] lg:mx-0" style={{ color: 'var(--ink-2)' }}>
-              Crie sua mixtape com até 5 músicas, escreva 1 bilhete levemente cafona e escolha 1 bichinho com mais
+              Crie seu mix com até 5 músicas, escreva 1 bilhete levemente cafona e escolha 1 bichinho com mais
               sentimento que você. Depois é só mandar pra quem você quiser.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
