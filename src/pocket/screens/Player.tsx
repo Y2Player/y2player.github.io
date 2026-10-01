@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Device, type WheelZone } from '../components/Hardware';
 import { HomeLink } from '../components/HomeLink';
+import { ShareSheet } from '../components/ShareSheet';
 import {
   LcdScreen,
   MENU_ITEMS,
@@ -54,6 +55,7 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
   // bilhete: abre sozinho no primeiro play (se houver); depois fica no MENU
   const [noteSeen, setNoteSeen] = useState(false);
   const [notePop, setNotePop] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const popBtn = useRef<HTMLButtonElement>(null);
   const overlayTimer = useRef<number>();
 
@@ -202,6 +204,7 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
         if (e.key === 'Escape') closeNote();
         return;
       }
+      if (sharing) return;
       if ((e.target as HTMLElement)?.closest?.('input,textarea,[role=slider]')) return;
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
@@ -270,9 +273,13 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
             {demo ? 'Demo · ' : ''}
             {who} {whom}
           </span>
-          <span className="pp-spec flex-none" style={{ color: 'var(--ink-3)' }}>
-            {total} faixas
-          </span>
+          <button
+            className="pp-spec flex-none underline underline-offset-4"
+            style={{ color: 'var(--ink-2)', background: 'none', border: 0, padding: 0, cursor: 'pointer' }}
+            onClick={() => setSharing(true)}
+          >
+            Compartilhar
+          </button>
         </header>
 
         <main className="flex min-h-0 w-full flex-1 flex-col items-center justify-center">
@@ -315,6 +322,7 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
           </div>
         </div>
       )}
+      {sharing && <ShareSheet mix={{ ...mix, tracks }} onClose={() => setSharing(false)} />}
       <div ref={host} className="pp-yt-host" aria-hidden />
     </div>
   );
