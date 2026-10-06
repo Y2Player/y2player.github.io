@@ -266,9 +266,34 @@ export function CreateWizard() {
     [mood, finishId, title, from, to, note, slots],
   );
 
+  // Cada passo (e o "gravado") vira uma entrada no histórico do navegador, no mesmo endereço:
+  // a seta de voltar do navegador volta um passo em vez de sair da montagem.
+  useEffect(() => {
+    history.replaceState({ ...(history.state ?? {}), y2pStep: 0 }, '');
+    const onPop = (e: PopStateEvent) => {
+      const st = e.state?.y2pStep;
+      if (typeof st !== 'number') return;
+      setStep(st);
+      if (!e.state.y2pSaved) setLink(null);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+  const goNext = () => {
+    haptic('key');
+    history.pushState({ y2pStep: step + 1 }, '');
+    setStep((s) => s + 1);
+  };
+  // voltar de dentro do app usa o mesmo histórico, pra seta do navegador continuar certa depois
+  const goBack = () => {
+    if (history.state?.y2pStep === step && step > 0) history.back();
+    else setStep((s) => Math.max(0, s - 1));
+  };
+
   const generate = async () => {
     haptic('heavy');
     setLink(await shareUrl(mix));
+    history.pushState({ y2pStep: 2, y2pSaved: true }, '');
     setCopied(false);
   };
 
@@ -443,7 +468,7 @@ export function CreateWizard() {
                 onClick={() => {
                   haptic('key');
                   // na primeira etapa volta pro mix de onde a pessoa veio pelo +, ou pra home
-                  if (step > 0) setStep((s) => s - 1);
+                  if (step > 0) goBack();
                   else if (fromMix) history.back();
                   else location.hash = '#/';
                 }}
@@ -452,7 +477,7 @@ export function CreateWizard() {
               </button>
             )}
             {step < 2 && (
-              <button className="pp-btn is-gel flex-1" disabled={!canNext} onClick={() => (haptic('key'), setStep((s) => s + 1))}>
+              <button className="pp-btn is-gel flex-1" disabled={!canNext} onClick={goNext}>
                 {step === 1 && !canNext ? tracksCta : 'Avançar'}
               </button>
             )}
