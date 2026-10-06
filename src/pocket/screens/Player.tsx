@@ -60,6 +60,10 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
   const [creating, setCreating] = useState(false);
   const popBtn = useRef<HTMLButtonElement>(null);
   const overlayTimer = useRef<number>();
+  // balão que aponta pro compartilhar: uma vez por mix, uns segundos depois da música começar
+  const [nudge, setNudge] = useState(false);
+  const nudgeArmed = useRef(false);
+  const nudgeKey = `y2p-nudge:${location.hash}`;
 
   const flash = useCallback((o: Overlay, ms = 1300) => {
     setOverlay(o);
@@ -106,6 +110,32 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
   useEffect(() => {
     if (notePop) popBtn.current?.focus();
   }, [notePop]);
+
+  const isPlaying = current && playing;
+  useEffect(() => {
+    if (!isPlaying || nudgeArmed.current) return;
+    try {
+      if (localStorage.getItem(nudgeKey)) return;
+    } catch {}
+    // conta 5 s de música tocando; se pausar antes, recomeça no próximo play
+    const t = window.setTimeout(() => {
+      nudgeArmed.current = true;
+      setNudge(true);
+    }, 5000);
+    return () => window.clearTimeout(t);
+  }, [isPlaying]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // o balão fica até a pessoa tocar nele ou num dos dois botões; aí não volta mais neste mix
+  const closeNudge = () => {
+    setNudge(false);
+    try {
+      localStorage.setItem(nudgeKey, '1');
+    } catch {}
+  };
+  const openShare = () => {
+    closeNudge();
+    setSharing(true);
+  };
 
   const togglePlay = () => {
     if (mix.note && !noteSeen) {
@@ -295,10 +325,15 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
 
         {/* rodapé: compartilhar e criar lado a lado */}
         <footer className="flex w-full flex-none justify-center pb-[calc(14px+env(safe-area-inset-bottom))] pt-3">
-          <div className="flex items-center justify-center gap-2">
+          <div className="relative flex items-center justify-center gap-2">
+            {nudge && (
+              <button className="pp-nudge pp-fade-in" onClick={closeNudge}>
+                Compartilhe esse mix ou crie um novo
+              </button>
+            )}
             <button
-              className="pp-btn is-ghost !h-10 !w-10 !p-0"
-              onClick={() => setSharing(true)}
+              className={`pp-btn is-ghost !h-10 !w-10 !p-0${nudge ? ' is-body' : ''}`}
+              onClick={openShare}
               aria-label="Compartilhar"
               title="Compartilhar"
             >
@@ -309,10 +344,13 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
               </svg>
             </button>
             <button
-              className="pp-btn is-ghost !h-10 !w-10 !p-0"
+              className={`pp-btn is-ghost !h-10 !w-10 !p-0${nudge ? ' is-body' : ''}`}
               aria-label="Criar a sua"
               title="Criar a sua"
-              onClick={() => setCreating(true)}
+              onClick={() => {
+                closeNudge();
+                setCreating(true);
+              }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
                 <path d="M12 5v14M5 12h14" />
