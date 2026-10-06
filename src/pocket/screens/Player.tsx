@@ -63,7 +63,8 @@ export function PlayerScreen({ mix, demo }: { mix: Mixtape; demo?: boolean }) {
   // balão que aponta pro compartilhar: uma vez por mix, uns segundos depois da música começar
   const [nudge, setNudge] = useState(false);
   const nudgeArmed = useRef(false);
-  const nudgeKey = `y2p-nudge:${location.hash}`;
+  // cada mix tem a sua marca: link curto (/k7Hq2) fica no caminho, link longo no #
+  const nudgeKey = `y2p-nudge:${location.pathname}${location.hash}`;
 
   const flash = useCallback((o: Overlay, ms = 1300) => {
     setOverlay(o);
