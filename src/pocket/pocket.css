@@ -934,6 +934,30 @@
   }
 }
 
+/* campo da faixa: o texto de exemplo é longo ("Buscar ou colar link do YouTube") e precisa caber no celular */
+.pp-search::placeholder {
+  font-size: 15px;
+}
+
+/* resultado da busca no passo 2 */
+.pp-result {
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 120ms;
+  -webkit-tap-highlight-color: transparent;
+}
+.pp-result:hover,
+.pp-result:focus-visible {
+  background: var(--paper);
+  outline: none;
+}
+.pp-result:active {
+  background: var(--paper);
+  transform: scale(0.99);
+}
+
 .pp-chip {
   border: 0;
   background: var(--paper-2);

@@ -56,6 +56,29 @@ export function fetchTrackInfo(id: string): Promise<Track> {
 
 export const thumb = (id: string) => `https://i.ytimg.com/vi/${id}/default.jpg`;
 
+// Busca no YouTube pelo nosso servidor (a chave da API fica lá).
+// Erros: 'quota' quando a cota grátis do dia acabou; 'error' para o resto (sem rede, servidor fora).
+export async function searchTracks(q: string): Promise<Track[]> {
+  let res: Response;
+  try {
+    res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}`);
+  } catch {
+    throw new Error('error');
+  }
+  if (res.status === 429) throw new Error('quota');
+  if (!res.ok) throw new Error('error');
+  const data = (await res.json()) as { results?: Track[] };
+  return data.results ?? [];
+}
+
+// texto que parece link (e não uma busca por nome). Um código solto de 11 caracteres só conta
+// se tiver número, maiúscula, _ ou -: uma palavra de 11 letras minúsculas é busca.
+export function looksLikeLink(input: string) {
+  const s = input.trim();
+  if (/^[\w-]{11}$/.test(s)) return /[0-9A-Z_-]/.test(s);
+  return /^(https?:\/\/|www\.)|youtu\.?be|\.com\b|\//i.test(s);
+}
+
 // ─── Link compartilhável (tudo no hash, sem backend) ───────────────────────
 
 function toBase64Url(str: string) {

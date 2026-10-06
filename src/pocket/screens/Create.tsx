@@ -6,7 +6,9 @@ import { haptic } from '../lib/haptics';
 import {
   fetchTrackInfo,
   LIMITS,
+  looksLikeLink,
   parseYouTubeId,
+  searchTracks,
   shareUrl,
   thumb,
   MAX_TRACKS,
@@ -16,12 +18,27 @@ import {
 } from '../lib/mixtape';
 import { FINISHES, MOOD_LIST, finishForMood, finishVars, type MoodId } from '../tokens';
 
-type SlotStatus = 'empty' | 'loading' | 'ok' | 'invalid' | 'notfound';
+// link: empty → loading → ok | invalid | notfound
+// busca por nome: query → searching → results | noresults | quota | searcherror
+type SlotStatus =
+  | 'empty'
+  | 'loading'
+  | 'ok'
+  | 'invalid'
+  | 'notfound'
+  | 'query'
+  | 'searching'
+  | 'results'
+  | 'noresults'
+  | 'quota'
+  | 'searcherror';
+const SEARCHING: SlotStatus[] = ['query', 'searching', 'results', 'noresults', 'quota', 'searcherror'];
 interface Slot {
   key: string; // identidade fixa: a posição muda quando a pessoa reordena
-  url: string;
+  url: string; // o que está no campo: link ou o nome buscado
   status: SlotStatus;
   track?: Track;
+  results?: Track[];
 }
 
 let slotSeq = 0;
@@ -68,10 +85,37 @@ export function CreateWizard() {
     const key = slots[i]?.key;
     if (!key) return;
     setLink(null);
-    setSlots((s) => s.map((x) => (x.key === key ? { ...x, url, status: url.trim() ? 'loading' : 'empty', track: undefined } : x)));
+    // texto que não é link vira busca: espera a pessoa apertar Buscar
+    const status: SlotStatus = !url.trim() ? 'empty' : looksLikeLink(url) ? 'loading' : 'query';
+    setSlots((s) => s.map((x) => (x.key === key ? { ...x, url, status, track: undefined, results: undefined } : x)));
     window.clearTimeout(timers.current.get(key));
-    if (!url.trim()) return;
+    if (status !== 'loading') return;
     timers.current.set(key, window.setTimeout(() => validate(key, i, url), 350));
+  };
+
+  const searchSlot = (i: number) => {
+    const slot = slots[i];
+    if (!slot || !slot.url.trim() || slot.status === 'searching') return;
+    const { key, url } = slot;
+    const update = (patch: Partial<Slot>) =>
+      setSlots((s) => s.map((x) => (x.key === key && x.url === url ? { ...x, ...patch } : x)));
+    haptic('key');
+    // fecha o teclado pra lista de resultados aparecer
+    (document.activeElement as HTMLElement | null)?.blur();
+    update({ status: 'searching', results: undefined });
+    searchTracks(url)
+      .then((results) => update(results.length ? { status: 'results', results: results.slice(0, 5) } : { status: 'noresults' }))
+      .catch((e: Error) => update({ status: e.message === 'quota' ? 'quota' : 'searcherror' }));
+  };
+
+  const pickResult = (i: number, track: Track) => {
+    const key = slots[i]?.key;
+    if (!key) return;
+    haptic('tick');
+    setLink(null);
+    setSlots((s) =>
+      s.map((x) => (x.key === key ? { ...x, url: `https://youtu.be/${track.id}`, status: 'ok', track, results: undefined } : x)),
+    );
   };
 
   const validate = (key: string, i: number, url: string) => {
@@ -120,15 +164,6 @@ export function CreateWizard() {
       next.splice(to, 0, item);
       return next;
     });
-  };
-
-  const paste = async (i: number) => {
-    try {
-      const txt = await navigator.clipboard.readText();
-      if (txt) setSlotUrl(i, txt);
-    } catch {
-      /* permissão negada: usuário cola manualmente */
-    }
   };
 
   const okCount = slots.filter((s) => s.status === 'ok').length;
@@ -293,8 +328,9 @@ export function CreateWizard() {
               <StepTracks
                 slots={slots}
                 setSlotUrl={setSlotUrl}
+                searchSlot={searchSlot}
+                pickResult={pickResult}
                 onFocusRow={setFocusRow}
-                paste={paste}
                 addSlot={addSlot}
                 removeSlot={removeSlot}
                 moveSlot={moveSlot}
@@ -401,18 +437,34 @@ function StepMood({ mood, setMood, tick }: { mood: MoodId; setMood: (m: MoodId) 
 // ─── Etapa 2 ───────────────────────────────────────────────────────────────
 
 const MSG: Record<SlotStatus, string> = {
-  empty: 'Esperando um link…',
+  empty: '',
   loading: 'Conferindo…',
   ok: '',
   invalid: 'Isso aí não é youtube não, hein',
   notfound: 'Esse vídeo sumiu ou é privado. Escolhe outro',
+  query: 'Aperta Buscar pra achar no YouTube',
+  searching: 'Buscando…',
+  results: '',
+  noresults: 'Não achei nada. Tenta outro nome',
+  quota: 'A busca descansou por hoje. Cola o link do YouTube',
+  searcherror: 'Não deu pra buscar agora. Cola o link do YouTube',
 };
+
+function IconSearch() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="m15.5 15.5 4.5 4.5" />
+    </svg>
+  );
+}
 
 function StepTracks({
   slots,
   setSlotUrl,
+  searchSlot,
+  pickResult,
   onFocusRow,
-  paste,
   addSlot,
   removeSlot,
   moveSlot,
@@ -420,8 +472,9 @@ function StepTracks({
 }: {
   slots: Slot[];
   setSlotUrl: (i: number, u: string) => void;
+  searchSlot: (i: number) => void;
+  pickResult: (i: number, t: Track) => void;
   onFocusRow: (i: number) => void;
-  paste: (i: number) => void;
   addSlot: () => void;
   removeSlot: (i: number) => void;
   moveSlot: (from: number, to: number) => void;
@@ -517,9 +570,6 @@ function StepTracks({
                   <rect x="2" y="10.4" width="12" height="1.6" rx="0.8" />
                 </svg>
               </button>
-              <span className="pp-spec w-6 flex-none text-center" style={{ color: 'var(--ink-3)' }}>
-                {String(i + 1).padStart(2, '0')}
-              </span>
               {s.status === 'ok' && s.track ? (
                 <div className="flex min-w-0 flex-1 items-center gap-2.5">
                   <img src={thumb(s.track.id)} alt="" className="h-9 w-12 flex-none rounded-[6px] object-cover" loading="lazy" />
@@ -531,45 +581,89 @@ function StepTracks({
                   </div>
                 </div>
               ) : (
-              <input
-                className="pp-field min-w-0 flex-1 !py-2.5"
-                inputMode="url"
-                autoCapitalize="off"
-                autoCorrect="off"
-                spellCheck={false}
-                placeholder="youtube.com/watch?v=…"
-                value={s.url}
-                onFocus={() => onFocusRow(i)}
-                onChange={(e) => setSlotUrl(i, e.target.value)}
-                aria-label={`Link da faixa ${i + 1}`}
-              />
+              // um campo só: link do YouTube ou o nome da música (a lupa avisa que dá pra buscar)
+              <div className="relative min-w-0 flex-1">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--ink-3)' }}>
+                  <IconSearch />
+                </span>
+                <input
+                  className="pp-field pp-search !py-2.5 !pl-9 !pr-3"
+                  inputMode="text"
+                  enterKeyHint="search"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  placeholder="Buscar ou colar link do YouTube"
+                  value={s.url}
+                  onFocus={() => onFocusRow(i)}
+                  onChange={(e) => setSlotUrl(i, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && SEARCHING.includes(s.status)) {
+                      e.preventDefault();
+                      searchSlot(i);
+                    }
+                  }}
+                  aria-label={`Faixa ${i + 1}: nome da música ou link do YouTube`}
+                />
+              </div>
               )}
-              {s.url ? (
-                <button className="pp-spec h-10 flex-none rounded-full px-3" style={{ color: 'var(--ink-2)' }} onClick={() => setSlotUrl(i, '')}>
-                  Limpar
-                </button>
-              ) : canRemove ? (
+              {SEARCHING.includes(s.status) ? (
                 <button
                   className="pp-spec h-10 flex-none rounded-full px-3"
+                  style={{ color: 'var(--ink)', boxShadow: 'inset 0 0 0 1px var(--line)' }}
+                  disabled={s.status === 'searching'}
+                  onClick={() => searchSlot(i)}
+                >
+                  Buscar
+                </button>
+              ) : (
+                s.url && (
+                  <button className="pp-spec h-10 flex-none rounded-full px-3" style={{ color: 'var(--ink-2)' }} onClick={() => setSlotUrl(i, '')}>
+                    Limpar
+                  </button>
+                )
+              )}
+            </div>
+            {s.status === 'results' && s.results ? (
+              // resultados da busca: um toque escolhe a música
+              <div className="pp-fade-in mt-2 flex flex-col gap-0.5 pl-[26px]">
+                {s.results.map((r) => (
+                  <button
+                    key={r.id}
+                    className="pp-result flex min-w-0 items-center gap-2.5 rounded-[10px] p-1.5 text-left"
+                    onClick={() => pickResult(i, r)}
+                  >
+                    <img src={thumb(r.id)} alt="" className="h-9 w-12 flex-none rounded-[6px] object-cover" loading="lazy" />
+                    <span className="min-w-0">
+                      <span className="block truncate text-[14px] font-medium leading-tight">{r.title}</span>
+                      <span className="block truncate text-[12px]" style={{ color: 'var(--ink-3)' }}>
+                        {r.author}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              MSG[s.status] && (
+                <div
+                  className="mt-1.5 pl-8 text-[13px] leading-[18px]"
+                  style={{ color: s.status === 'invalid' || s.status === 'notfound' ? '#d8352a' : 'var(--ink-3)' }}
+                >
+                  {MSG[s.status]}
+                </div>
+              )
+            )}
+            {s.status === 'empty' && canRemove && (
+              // faixa extra vazia: o Tirar fica embaixo pra não apertar o campo
+              <div className="mt-1 flex justify-end">
+                <button
+                  className="pp-spec h-8 rounded-full px-3"
                   style={{ color: 'var(--ink-2)' }}
                   onClick={() => removeSlot(i)}
                   aria-label={`Remover faixa ${i + 1}`}
                 >
                   Tirar
                 </button>
-              ) : (
-                <button
-                  className="pp-spec h-10 flex-none rounded-full px-3"
-                  style={{ color: 'var(--ink)', boxShadow: 'inset 0 0 0 1px var(--line)' }}
-                  onClick={() => paste(i)}
-                >
-                  Colar
-                </button>
-              )}
-            </div>
-            {!(s.status === 'ok' && s.track) && (
-              <div className="mt-1.5 pl-16 text-[13px] leading-[18px]" style={{ color: s.status === 'invalid' || s.status === 'notfound' ? '#d8352a' : 'var(--ink-3)' }}>
-                {MSG[s.status]}
               </div>
             )}
           </div>

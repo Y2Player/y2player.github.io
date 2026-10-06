@@ -9,6 +9,10 @@ export default defineConfig({
   server: {
     port: 3000,
     open: false,
-    host: true
+    host: true,
+    // em desenvolvimento a busca usa o servidor do site no ar (a chave do YouTube fica lá)
+    proxy: {
+      '/api/search': { target: 'https://y2player.com', changeOrigin: true }
+    }
   }
 });
