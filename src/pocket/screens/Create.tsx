@@ -752,7 +752,7 @@ function StepNote(p: {
             <input className="pp-field" maxLength={LIMITS.from} placeholder="Seu nome" value={p.from} onChange={(e) => p.setFrom(e.target.value)} />
           </label>
           <label className="block">
-            <div className="mb-1.5 text-[14px] font-medium">Pra</div>
+            <div className="mb-1.5 text-[14px] font-medium">Para</div>
             <input className="pp-field" maxLength={LIMITS.to} placeholder="Nome de quem recebe" value={p.to} onChange={(e) => p.setTo(e.target.value)} />
           </label>
         </div>
@@ -763,7 +763,7 @@ function StepNote(p: {
           <textarea
             className="pp-field min-h-[96px] resize-none leading-[1.45] lg:min-h-[132px]"
             maxLength={LIMITS.note}
-            placeholder="Escreve do coração (ou do jeito que der)."
+            placeholder="Escreva aqui sua mensagem"
             value={p.note}
             onChange={(e) => p.setNote(e.target.value)}
           />
