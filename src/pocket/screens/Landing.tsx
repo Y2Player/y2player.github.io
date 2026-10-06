@@ -33,6 +33,17 @@ export function Landing() {
     return () => window.clearTimeout(id);
   }, [m, n, held]);
   useEffect(() => () => window.clearTimeout(holdTimer.current), []);
+  // espaço no computador: o mesmo que o botão do meio (o bichinho dança ou para)
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key !== ' ' || e.repeat) return;
+      if ((e.target as HTMLElement)?.closest?.('input,textarea,[contenteditable]')) return;
+      e.preventDefault();
+      setPlaying((p) => !p);
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, []);
 
   const hold = () => {
     setHeld(true);

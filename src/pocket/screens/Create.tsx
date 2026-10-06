@@ -180,7 +180,8 @@ export function CreateWizard() {
     if (!s?.track) return;
     setPlaying({ key, id: s.track.id });
     yt.load(s.track.id, true);
-    setOverride('now');
+    // o cursor da lista acompanha a música que está tocando
+    setFocusRow(slots.findIndex((x) => x.key === key));
   };
   const stepSlot = (dir: 1 | -1) => {
     const i = okSlots.findIndex((s) => s.key === playing?.key);
@@ -199,6 +200,28 @@ export function CreateWizard() {
     },
   });
   const realPlaying = !!playSlot && (yt.status === 'playing' || yt.status === 'buffering');
+  // botão do meio (e espaço no computador): com música escolhida, o play é de verdade —
+  // a que já está no player, a da vaga em foco ou a primeira
+  const centerPress = () => {
+    if (playSlot) return toggleSlot(playSlot.key);
+    const focused = slots[focusRow];
+    const target = focused?.status === 'ok' ? focused : okSlots[0];
+    if (target) return toggleSlot(target.key);
+    setPreviewPlaying((p) => !p);
+  };
+  const centerRef = useRef(centerPress);
+  centerRef.current = centerPress;
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key !== ' ' || e.repeat) return;
+      // escrevendo num campo, o espaço é espaço
+      if ((e.target as HTMLElement)?.closest?.('input,textarea,[contenteditable]')) return;
+      e.preventDefault();
+      centerRef.current();
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, []);
   const toggleSlot = (key: string) => {
     haptic('key');
     if (playing?.key !== key) return startSlot(key);
@@ -264,7 +287,8 @@ export function CreateWizard() {
   const fakeT = (tick % 480) * 0.5;
   const firstTrack = slots.find((s) => s.track)?.track;
   let screen;
-  const view = override ?? (step === 0 ? 'now' : step === 1 ? 'list' : 'note');
+  // passo 2: o visor fica sempre na lista de faixas (o MENU não troca de tela ali)
+  const view = step === 1 ? 'list' : override ?? (step === 0 ? 'now' : 'note');
   if (link) screen = <ScreenSaved mood={mood} tick={tick} count={mix.tracks.length} />;
   else if (view === 'now')
     screen = (
@@ -306,15 +330,17 @@ export function CreateWizard() {
         yt.setVolume(v * 100);
       }}
       onLight={setLit}
-      onCenter={() => {
-        // com música escolhida, o play é de verdade: a que já está no player, a da vaga em foco ou a primeira
-        if (playSlot) return toggleSlot(playSlot.key);
-        const focused = slots[focusRow];
-        const target = focused?.status === 'ok' ? focused : okSlots[0];
-        if (target) return toggleSlot(target.key);
-        setPreviewPlaying((p) => !p);
-      }}
+      onCenter={centerPress}
       onWheel={(z) => {
+        // passo 2: só tocar, voltar e passar. MENU e VOLTAR (da roda) ficam sem efeito.
+        // Tocando: troca de música. Parado: o cursor da lista anda e o OK toca a escolhida.
+        if (step === 1) {
+          if (z === 'menu' || z === 'back') return;
+          const dir = z === 'next' ? 1 : -1;
+          if (playSlot) return void stepSlot(dir);
+          setOverride(null);
+          return setFocusRow((r) => Math.max(0, Math.min(slots.length - 1, r + dir)));
+        }
         // MENU passeia pelas telas do visor na pré-visualização; VOLTAR retorna à tela da etapa
         if (z === 'menu') {
           const order = ['now', 'list', 'note'] as const;
