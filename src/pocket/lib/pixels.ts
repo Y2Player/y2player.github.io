@@ -389,17 +389,24 @@ export function composeScene(o: SceneOpts): Grid {
   }
 
   if (o.mood === 'focus' && !o.sleep) {
-    // osciloscópio zen ao lado
-    const ox = baseX + 22;
-    const ow = o.vu ? 0 : Math.min(14, W - ox - 1);
-    if (ow > 4) {
+    // osciloscópio zen dos dois lados, espelhado; se não couber à esquerda, fica só à direita
+    const right = baseX + 22;
+    const wr = o.vu ? 0 : Math.min(14, W - right - 1);
+    const wl = Math.min(wr, baseX - 3);
+    const both = wl > 4;
+    const ow = both ? wl : wr;
+    const scope = (ox: number, mirror: boolean) => {
       stamp(g, ['#' + '+'.repeat(ow - 2) + '#'], ox, baseY + 4);
       stamp(g, ['#' + '+'.repeat(ow - 2) + '#'], ox, baseY + 14);
       for (let x = 1; x < ow - 1; x++) {
         const ph = idle ? 0 : t * 0.7;
         const y = Math.round(Math.sin((x + ph) / 1.6) * 3);
-        dot(g, ox + x, baseY + 9 + y);
+        dot(g, mirror ? ox + ow - 1 - x : ox + x, baseY + 9 + y);
       }
+    };
+    if (ow > 4) {
+      scope(right, false);
+      if (both) scope(baseX - 2 - ow, true);
     }
     if (o.vu) {
       // onda embaixo quando o VU ocupa as laterais
