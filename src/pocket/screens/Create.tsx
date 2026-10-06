@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Device } from '../components/Hardware';
 import { LcdScreen, MascotScene, ScreenList, ScreenNote, ScreenNow, ScreenSaved } from '../components/Lcd';
 import { useTicker } from '../hooks/useTicker';
+import { useYouTube } from '../hooks/useYouTube';
 import { haptic } from '../lib/haptics';
 import {
   fetchTrackInfo,
@@ -66,6 +67,9 @@ export function CreateWizard() {
   const [previewPlaying, setPreviewPlaying] = useState(true);
   const [override, setOverride] = useState<'now' | 'note' | 'list' | null>(null);
   const timers = useRef(new Map<string, number>());
+  // ouvir enquanto monta: a faixa que está no player (pela vaga e pelo vídeo)
+  const host = useRef<HTMLDivElement>(null);
+  const [playing, setPlaying] = useState<{ key: string; id: string } | null>(null);
   // lido ao abrir e apagado depois de montar, pra não valer numa próxima visita à criação
   const [fromMix] = useState(() => sessionStorage.getItem(FROM_MIX_KEY) ?? '');
   useEffect(() => sessionStorage.removeItem(FROM_MIX_KEY), []);
@@ -167,6 +171,55 @@ export function CreateWizard() {
   };
 
   const okCount = slots.filter((s) => s.status === 'ok').length;
+
+  // ── ouvir enquanto monta: o mesmo player escondido do mix
+  const okSlots = slots.filter((s) => s.status === 'ok' && s.track);
+  const playSlot = playing ? okSlots.find((s) => s.key === playing.key) : undefined;
+  const startSlot = (key: string) => {
+    const s = okSlots.find((x) => x.key === key);
+    if (!s?.track) return;
+    setPlaying({ key, id: s.track.id });
+    yt.load(s.track.id, true);
+    setOverride('now');
+  };
+  const stepSlot = (dir: 1 | -1) => {
+    const i = okSlots.findIndex((s) => s.key === playing?.key);
+    const n = okSlots[i + dir];
+    if (n) startSlot(n.key);
+    return !!n;
+  };
+  const yt = useYouTube(host, {
+    // acabou: passa pra próxima escolhida; na última, para
+    onEnded: () => {
+      if (!stepSlot(1)) setPlaying(null);
+    },
+    // vídeo que não toca fora do YouTube: pula
+    onError: () => {
+      if (!stepSlot(1)) setPlaying(null);
+    },
+  });
+  const realPlaying = !!playSlot && (yt.status === 'playing' || yt.status === 'buffering');
+  const toggleSlot = (key: string) => {
+    haptic('key');
+    if (playing?.key !== key) return startSlot(key);
+    if (realPlaying) yt.pause();
+    else yt.play();
+  };
+  // a primeira escolhida já fica preparada no player: o primeiro toque toca na hora (o iPhone exige)
+  const firstId = okSlots[0]?.track?.id;
+  useEffect(() => {
+    if (yt.ready && !playing && firstId) yt.load(firstId, false);
+  }, [yt.ready, firstId, playing]); // eslint-disable-line react-hooks/exhaustive-deps
+  // a faixa que tocava foi trocada ou tirada: para
+  useEffect(() => {
+    if (playing && playSlot?.track?.id !== playing.id) {
+      yt.pause();
+      setPlaying(null);
+    }
+  }, [slots]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (yt.ready) yt.setVolume(vol * 100);
+  }, [yt.ready]); // eslint-disable-line react-hooks/exhaustive-deps
   // link com erro ou ainda conferindo segura o passo; vaga vazia só é ignorada
   const pending = slots.some((s) => s.status === 'loading');
   const broken = slots.some((s) => s.status === 'invalid' || s.status === 'notfound');
@@ -218,12 +271,13 @@ export function CreateWizard() {
       <ScreenNow
         mood={mood}
         tick={tick}
-        playing={previewPlaying}
-        track={firstTrack ?? { id: '', title: title || 'Seu mix', author: 'Faixa 01' }}
-        index={0}
+        playing={playSlot ? realPlaying : previewPlaying}
+        buffering={!!playSlot && yt.status === 'buffering'}
+        track={playSlot?.track ?? firstTrack ?? { id: '', title: title || 'Seu mix', author: 'Faixa 01' }}
+        index={playSlot ? okSlots.indexOf(playSlot) : 0}
         total={Math.max(okCount, 1)}
-        time={fakeT}
-        duration={240}
+        time={playSlot ? yt.time : fakeT}
+        duration={playSlot ? yt.duration : 240}
         hasNote={!!note}
       />
     );
@@ -232,8 +286,8 @@ export function CreateWizard() {
       <ScreenList
         tracks={slots.map((s) => s.track ?? null)}
         cursor={focusRow}
-        playingIndex={-1}
-        playing={false}
+        playingIndex={playSlot ? slots.indexOf(playSlot) : -1}
+        playing={realPlaying}
         tick={tick}
         label={(title || 'LADO A').toUpperCase().slice(0, 18)}
       />
@@ -244,11 +298,21 @@ export function CreateWizard() {
     <Device
       finish={finish}
       lit={lit}
-      playing={previewPlaying}
+      playing={playSlot ? realPlaying : previewPlaying}
       volume={vol}
-      onVolume={setVol}
+      onVolume={(v) => {
+        setVol(v);
+        yt.setVolume(v * 100);
+      }}
       onLight={setLit}
-      onCenter={() => setPreviewPlaying((p) => !p)}
+      onCenter={() => {
+        // com música escolhida, o play é de verdade: a que já está no player, a da vaga em foco ou a primeira
+        if (playSlot) return toggleSlot(playSlot.key);
+        const focused = slots[focusRow];
+        const target = focused?.status === 'ok' ? focused : okSlots[0];
+        if (target) return toggleSlot(target.key);
+        setPreviewPlaying((p) => !p);
+      }}
       onWheel={(z) => {
         // MENU passeia pelas telas do visor na pré-visualização; VOLTAR retorna à tela da etapa
         if (z === 'menu') {
@@ -256,6 +320,8 @@ export function CreateWizard() {
           return setOverride(order[(order.indexOf(view) + 1) % order.length]);
         }
         if (z === 'back') return setOverride(null);
+        // tocando de verdade: avança e volta entre as músicas escolhidas
+        if (playSlot) return void stepSlot(z === 'next' ? 1 : -1);
         const i = MOOD_LIST.findIndex((m) => m.id === mood);
         const n = (i + (z === 'next' ? 1 : -1) + MOOD_LIST.length) % MOOD_LIST.length;
         if (step === 0) setMood(MOOD_LIST[n].id);
@@ -314,6 +380,9 @@ export function CreateWizard() {
                 setSlotUrl={setSlotUrl}
                 searchSlot={searchSlot}
                 pickResult={pickResult}
+                playingKey={playSlot?.key ?? null}
+                isPlaying={realPlaying}
+                toggleSlot={toggleSlot}
                 onFocusRow={setFocusRow}
                 addSlot={addSlot}
                 removeSlot={removeSlot}
@@ -379,6 +448,7 @@ export function CreateWizard() {
           </div>
         </section>
       </div>
+      <div ref={host} className="pp-yt-host" aria-hidden />
     </div>
   );
 }
@@ -444,6 +514,23 @@ const MSG: Record<SlotStatus, string> = {
   searcherror: 'Não deu pra buscar agora. Cola o link do YouTube',
 };
 
+function IconPlay() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M7 4.9v14.2a.8.8 0 0 0 1.22.68l11.4-7.1a.8.8 0 0 0 0-1.36L8.22 4.22A.8.8 0 0 0 7 4.9z" />
+    </svg>
+  );
+}
+
+function IconPause() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <rect x="6" y="5" width="4.2" height="14" rx="0.8" />
+      <rect x="13.8" y="5" width="4.2" height="14" rx="0.8" />
+    </svg>
+  );
+}
+
 function IconSearch() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
@@ -458,6 +545,9 @@ function StepTracks({
   setSlotUrl,
   searchSlot,
   pickResult,
+  playingKey,
+  isPlaying,
+  toggleSlot,
   onFocusRow,
   addSlot,
   removeSlot,
@@ -468,6 +558,9 @@ function StepTracks({
   setSlotUrl: (i: number, u: string) => void;
   searchSlot: (i: number) => void;
   pickResult: (i: number, t: Track) => void;
+  playingKey: string | null;
+  isPlaying: boolean;
+  toggleSlot: (key: string) => void;
   onFocusRow: (i: number) => void;
   addSlot: () => void;
   removeSlot: (i: number) => void;
@@ -566,7 +659,18 @@ function StepTracks({
               </button>
               {s.status === 'ok' && s.track ? (
                 <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                  <img src={thumb(s.track.id)} alt="" className="h-9 w-12 flex-none rounded-[6px] object-cover" loading="lazy" />
+                  {/* a miniatura é o botão de ouvir: toca no aparelho enquanto monta */}
+                  <button
+                    type="button"
+                    className="pp-thumb-play relative h-9 w-12 flex-none overflow-hidden rounded-[6px]"
+                    onClick={() => toggleSlot(s.key)}
+                    aria-label={playingKey === s.key && isPlaying ? `Pausar ${s.track.title}` : `Ouvir ${s.track.title}`}
+                  >
+                    <img src={thumb(s.track.id)} alt="" className="h-full w-full object-cover" loading="lazy" />
+                    <span className="absolute inset-0 grid place-items-center">
+                      {playingKey === s.key && isPlaying ? <IconPause /> : <IconPlay />}
+                    </span>
+                  </button>
                   <div className="min-w-0">
                     <div className="truncate text-[14px] font-medium leading-tight">{s.track.title}</div>
                     <div className="truncate text-[12px]" style={{ color: 'var(--ink-3)' }}>

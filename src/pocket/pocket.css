@@ -939,6 +939,25 @@
   font-size: 15px;
 }
 
+/* miniatura da faixa escolhida = botão de ouvir: véu escuro com o ícone por cima */
+.pp-thumb-play {
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: #fff;
+  -webkit-tap-highlight-color: transparent;
+}
+.pp-thumb-play > span {
+  background: rgba(0, 0, 0, 0.38);
+  transition: background 120ms;
+}
+.pp-thumb-play:hover > span {
+  background: rgba(0, 0, 0, 0.5);
+}
+.pp-thumb-play:active {
+  transform: scale(0.96);
+}
+
 /* resultado da busca no passo 2 */
 .pp-result {
   border: 0;

@@ -71,7 +71,8 @@ export function useYouTube(host: RefObject<HTMLDivElement>, opts: Opts) {
       player.current = new w.YT.Player(el, {
         width: 320,
         height: 180,
-        videoId: cbs.current.initialId,
+        // sem faixa ainda (montagem): o player nasce vazio. videoId undefined faz o YouTube recusar o player
+        ...(cbs.current.initialId ? { videoId: cbs.current.initialId } : {}),
         // mesmos parâmetros da referência (mixtape-for-you) + playsinline para o iPhone
         playerVars: { autoplay: 0, controls: 0, rel: 0, modestbranding: 1, playsinline: 1 },
         events: {
