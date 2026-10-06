@@ -71,6 +71,19 @@ export async function searchTracks(q: string): Promise<Track[]> {
   return data.results ?? [];
 }
 
+// Sugestões enquanto digita (as mesmas da caixa de busca do YouTube). Não gastam a cota;
+// se falharem, volta lista vazia e a pessoa busca normalmente.
+export async function suggestQueries(q: string): Promise<string[]> {
+  try {
+    const res = await fetch(`/api/suggest?q=${encodeURIComponent(q.trim())}`);
+    if (!res.ok) return [];
+    const data = (await res.json()) as { suggestions?: string[] };
+    return data.suggestions ?? [];
+  } catch {
+    return [];
+  }
+}
+
 // texto que parece link (e não uma busca por nome). Um código solto de 11 caracteres só conta
 // se tiver número, maiúscula, _ ou -: uma palavra de 11 letras minúsculas é busca.
 export function looksLikeLink(input: string) {

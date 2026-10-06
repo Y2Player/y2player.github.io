@@ -10,6 +10,7 @@ import {
   looksLikeLink,
   parseYouTubeId,
   searchTracks,
+  suggestQueries,
   shareUrl,
   thumb,
   MAX_TRACKS,
@@ -40,6 +41,7 @@ interface Slot {
   status: SlotStatus;
   track?: Track;
   results?: Track[];
+  suggestions?: string[]; // enquanto digita um nome: as sugestões do YouTube
 }
 
 let slotSeq = 0;
@@ -93,20 +95,36 @@ export function CreateWizard() {
     const status: SlotStatus = !url.trim() ? 'empty' : looksLikeLink(url) ? 'loading' : 'query';
     setSlots((s) => s.map((x) => (x.key === key ? { ...x, url, status, track: undefined, results: undefined } : x)));
     window.clearTimeout(timers.current.get(key));
+    if (status === 'query') {
+      // sugestões enquanto digita (de graça, sem gastar busca); a busca de verdade é no Buscar
+      timers.current.set(
+        key,
+        window.setTimeout(() => {
+          suggestQueries(url).then((suggestions) =>
+            setSlots((s) => s.map((x) => (x.key === key && x.url === url && x.status === 'query' ? { ...x, suggestions } : x))),
+          );
+        }, 220),
+      );
+      return;
+    }
     if (status !== 'loading') return;
     timers.current.set(key, window.setTimeout(() => validate(key, i, url), 350));
   };
 
-  const searchSlot = (i: number) => {
+  // busca o que está no campo, ou a sugestão tocada (que passa a ser o texto do campo)
+  const searchSlot = (i: number, pick?: string) => {
     const slot = slots[i];
-    if (!slot || !slot.url.trim() || slot.status === 'searching') return;
-    const { key, url } = slot;
+    const url = pick ?? slot?.url ?? '';
+    if (!slot || !url.trim() || slot.status === 'searching') return;
+    const { key } = slot;
+    window.clearTimeout(timers.current.get(key));
+    if (pick) setSlots((s) => s.map((x) => (x.key === key ? { ...x, url: pick } : x)));
     const update = (patch: Partial<Slot>) =>
       setSlots((s) => s.map((x) => (x.key === key && x.url === url ? { ...x, ...patch } : x)));
     haptic('key');
     // fecha o teclado pra lista de resultados aparecer
     (document.activeElement as HTMLElement | null)?.blur();
-    update({ status: 'searching', results: undefined });
+    update({ status: 'searching', results: undefined, suggestions: undefined });
     searchTracks(url)
       .then((results) => update(results.length ? { status: 'results', results: results.slice(0, 5) } : { status: 'noresults' }))
       .catch((e: Error) => update({ status: e.message === 'quota' ? 'quota' : 'searcherror' }));
@@ -608,7 +626,7 @@ function StepTracks({
 }: {
   slots: Slot[];
   setSlotUrl: (i: number, u: string) => void;
-  searchSlot: (i: number) => void;
+  searchSlot: (i: number, pick?: string) => void;
   pickResult: (i: number, t: Track) => void;
   playingKey: string | null;
   isPlaying: boolean;
@@ -790,6 +808,24 @@ function StepTracks({
                         {r.author}
                       </span>
                     </span>
+                  </button>
+                ))}
+              </div>
+            ) : s.status === 'query' && s.suggestions?.length ? (
+              // sugestões do YouTube enquanto digita: um toque busca aquela
+              <div className="mt-1.5 flex flex-col pl-[26px]">
+                {s.suggestions.slice(0, 5).map((q) => (
+                  <button
+                    key={q}
+                    type="button"
+                    className="pp-result flex min-w-0 items-center gap-2.5 rounded-[10px] px-2 py-2 text-left text-[14px]"
+                    onPointerDown={(e) => e.preventDefault()}
+                    onClick={() => searchSlot(i, q)}
+                  >
+                    <span className="flex-none" style={{ color: 'var(--ink-3)' }}>
+                      <IconSearch />
+                    </span>
+                    <span className="truncate">{q}</span>
                   </button>
                 ))}
               </div>
