@@ -1,4 +1,5 @@
 // Encurtador do Y2Player: guarda o mix e devolve um código de 5 letras.
+// Também faz a busca de músicas no YouTube (a chave da API fica só aqui).
 // O site em si são arquivos estáticos servidos pela Cloudflare sem passar por aqui;
 // este Worker só roda em /api/*.
 //
@@ -7,6 +8,8 @@
 
 interface Env {
   DB: D1Database;
+  // chave da YouTube Data API (secret: npx wrangler secret put YOUTUBE_KEY)
+  YOUTUBE_KEY?: string;
 }
 
 // sem 0/O, 1/l/I: o código pode ser lido em voz alta ou digitado sem confusão
@@ -24,6 +27,99 @@ function newCode() {
 const text = (body: string, status = 200, headers: Record<string, string> = {}) =>
   new Response(body, { status, headers: { 'content-type': 'text/plain; charset=utf-8', ...headers } });
 
+const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
+  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8', ...headers } });
+
+// os títulos do YouTube vêm com entidades HTML (&amp;, &#39;…)
+function unescapeHtml(s: string) {
+  return s
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+}
+
+// só o próprio site usa a busca (o navegador manda de qual página veio a chamada)
+const SEARCH_FROM = new Set(['y2player.com', 'www.y2player.com', 'localhost', '127.0.0.1']);
+// buscas novas por pessoa por dia: um mix tem até 5 músicas, sobra folga pra errar o nome
+const SEARCH_PER_DAY = 20;
+
+async function sha256(text: string) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Conta as buscas de cada pessoa no dia sem guardar o endereço dela: fica só um resumo
+// (hash) do IP com o dia, que não volta a ser IP. Linhas de dias anteriores são apagadas.
+async function overLimit(req: Request, env: Env, ctx: ExecutionContext) {
+  const day = new Date().toISOString().slice(0, 10);
+  const who = await sha256(`${req.headers.get('cf-connecting-ip') ?? ''}|${day}`);
+  const n = await env.DB.prepare(
+    'INSERT INTO search_hits (who, day, n) VALUES (?, ?, 1) ON CONFLICT(who) DO UPDATE SET n = n + 1 RETURNING n',
+  )
+    .bind(who, day)
+    .first<number>('n');
+  ctx.waitUntil(env.DB.prepare('DELETE FROM search_hits WHERE day < ?').bind(day).run());
+  return (n ?? 0) > SEARCH_PER_DAY;
+}
+
+// Busca no YouTube: a cota grátis é de 100 buscas por dia para o site todo, então a mesma
+// busca fica guardada no cache da Cloudflare por uma semana e não gasta cota de novo.
+// Só vídeos que tocam fora do YouTube e no Brasil (os que o player consegue tocar).
+async function search(req: Request, env: Env, ctx: ExecutionContext) {
+  const url = new URL(req.url);
+  let from = '';
+  try {
+    from = new URL(req.headers.get('referer') ?? '').hostname;
+  } catch {
+    /* sem página de origem */
+  }
+  if (!SEARCH_FROM.has(from)) return json({ error: 'forbidden' }, 403);
+  const q = (url.searchParams.get('q') ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+  if (!q || q.length > 100) return json({ error: 'query' }, 400);
+  if (!env.YOUTUBE_KEY) return json({ error: 'off' }, 503);
+
+  const cache = caches.default;
+  const key = new Request(`${url.origin}/api/search?q=${encodeURIComponent(q)}`);
+  const hit = await cache.match(key);
+  if (hit) return hit;
+  // busca repetida (acima) não gasta cota; só a nova conta no limite da pessoa
+  if (await overLimit(req, env, ctx)) return json({ error: 'quota' }, 429);
+
+  const api = new URL('https://www.googleapis.com/youtube/v3/search');
+  api.search = new URLSearchParams({
+    part: 'snippet',
+    type: 'video',
+    videoEmbeddable: 'true',
+    videoSyndicated: 'true',
+    regionCode: 'BR',
+    maxResults: '6',
+    q,
+    key: env.YOUTUBE_KEY,
+  }).toString();
+  const r = await fetch(api);
+  if (!r.ok) {
+    const body = await r.text();
+    // cota do dia acabou: o app avisa e a pessoa cola o link
+    if (r.status === 403 && body.includes('quota')) return json({ error: 'quota' }, 429);
+    return json({ error: 'youtube' }, 502);
+  }
+  const data = (await r.json()) as {
+    items?: { id?: { videoId?: string }; snippet?: { title?: string; channelTitle?: string } }[];
+  };
+  const results = (data.items ?? [])
+    .filter((it) => it.id?.videoId)
+    .map((it) => ({
+      id: it.id!.videoId!,
+      title: unescapeHtml(it.snippet?.title ?? ''),
+      author: unescapeHtml(it.snippet?.channelTitle ?? ''),
+    }));
+  const res = json({ results }, 200, { 'cache-control': 'public, max-age=604800' });
+  ctx.waitUntil(cache.put(key, res.clone()));
+  return res;
+}
+
 async function save(env: Env, payload: string) {
   // o mesmo mix compartilhado de novo ganha o mesmo código
   const found = await env.DB.prepare('SELECT code FROM mixes WHERE payload = ?').bind(payload).first<string>('code');
@@ -39,8 +135,10 @@ async function save(env: Env, payload: string) {
 }
 
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
+
+    if (url.pathname === '/api/search' && req.method === 'GET') return search(req, env, ctx);
 
     if (url.pathname === '/api/mix' && req.method === 'POST') {
       const payload = (await req.text()).trim();
