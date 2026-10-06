@@ -836,6 +836,21 @@ function StepTracks({
                   style={{ color: s.status === 'invalid' || s.status === 'notfound' ? '#d8352a' : 'var(--ink-3)' }}
                 >
                   {MSG[s.status]}
+                  {(s.status === 'quota' || s.status === 'searcherror') && (
+                    // rede de segurança: a mesma busca no site do YouTube (não gasta cota).
+                    // O campo esvazia pra pessoa só colar o link quando voltar.
+                    <a
+                      className="pp-spec mt-2 flex h-9 w-fit items-center gap-2 rounded-full px-3"
+                      style={{ color: 'var(--ink)', boxShadow: 'inset 0 0 0 1px var(--line)' }}
+                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(s.url.trim())}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => setSlotUrl(i, '')}
+                    >
+                      <IconSearch />
+                      Buscar no YouTube
+                    </a>
+                  )}
                 </div>
               )
             )}
