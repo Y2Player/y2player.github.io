@@ -17,10 +17,11 @@ function rgb(hex: string) {
   const n = parseInt(hex.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
-function blend(a: string, b: string, t: number) {
+function blend(a: string, b: string, t: number, al = 1) {
   const A = rgb(a);
   const B = rgb(b);
-  return `rgb(${A.map((v, i) => Math.round(v * t + B[i] * (1 - t))).join(',')})`;
+  const m = A.map((v, i) => Math.round(v * t + B[i] * (1 - t))).join(',');
+  return al === 1 ? `rgb(${m})` : `rgba(${m},${al})`;
 }
 
 // ─── formas ────────────────────────────────────────────────────────────────
@@ -54,6 +55,103 @@ function rim(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: nu
   c.lineWidth = lw;
   c.stroke();
   c.restore();
+}
+
+// cor com transparência (o color-mix(X n%, transparent) do CSS)
+function alpha(hex: string, a: number) {
+  return `rgba(${rgb(hex).join(',')},${a})`;
+}
+
+// Sombra interna do CSS (box-shadow inset), com a mesma conta: a forma vazada
+// é desenhada longe da tela e só a sombra dela cai no lugar, presa dentro da forma.
+// `shape(grow)` traça o contorno crescido (ou encolhido, se negativo) sem beginPath.
+type Shape = (grow: number) => void;
+function insetShadow(c: CanvasRenderingContext2D, shape: Shape, ox: number, oy: number, blur: number, spread: number, color: string) {
+  // a forma vai pra x+D (fora da tela) dentro de um retângulo de ±M; a sombra volta -D
+  const D = 20000;
+  const M = 10000;
+  c.save();
+  c.beginPath();
+  shape(0);
+  c.clip();
+  c.translate(D, 0);
+  c.beginPath();
+  c.rect(-M, -M, 2 * M, 2 * M);
+  shape(-spread);
+  c.shadowColor = color;
+  c.shadowBlur = blur;
+  c.shadowOffsetX = ox - D;
+  c.shadowOffsetY = oy;
+  c.fillStyle = '#000';
+  c.fill('evenodd');
+  c.restore();
+}
+const roundShape = (c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): Shape => (g) =>
+  c.roundRect(x - g, y - g, w + 2 * g, h + 2 * g, Math.max(0, r + g));
+const circleShape = (c: CanvasRenderingContext2D, cx: number, cy: number, r: number): Shape => (g) => {
+  c.moveTo(cx + r + g, cy);
+  c.arc(cx, cy, r + g, 0, Math.PI * 2);
+};
+
+// radial-gradient(rx ry at cx cy, …) do CSS: degradê elíptico pintando o retângulo todo
+function ellipseGradient(
+  c: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  stops: [number, string][],
+) {
+  c.save();
+  c.translate(cx, cy);
+  c.scale(rx, ry);
+  const g = c.createRadialGradient(0, 0, 0, 0, 0, 1);
+  for (const [o, col] of stops) g.addColorStop(o, col);
+  c.fillStyle = g;
+  c.fillRect((x - cx) / rx, (y - cy) / ry, w / rx, h / ry);
+  c.restore();
+}
+
+// Reflexo molhado (.pp-shine): a borda de um retângulo arredondado em branco,
+// que some ao longo da altura e da largura (as duas máscaras do CSS, multiplicadas).
+// fromTop/fromLeft dizem de que lado o brilho nasce; cada máscara vai de opaco em a até zero em b.
+function shineBand(
+  c: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+  lw: number,
+  al: number,
+  v: { fromTop: boolean; a: number; b: number },
+  hz: { fromLeft: boolean; a: number; b: number },
+) {
+  const off = document.createElement('canvas');
+  off.width = Math.ceil(w);
+  off.height = Math.ceil(h);
+  const o = off.getContext('2d')!;
+  o.beginPath();
+  o.roundRect(lw / 2, lw / 2, w - lw, h - lw, Math.max(0, r - lw / 2));
+  o.strokeStyle = `rgba(255,255,255,${al})`;
+  o.lineWidth = lw;
+  o.stroke();
+  o.globalCompositeOperation = 'destination-in';
+  const gv = v.fromTop ? o.createLinearGradient(0, 0, 0, h) : o.createLinearGradient(0, h, 0, 0);
+  gv.addColorStop(v.a, '#000');
+  gv.addColorStop(v.b, 'rgba(0,0,0,0)');
+  o.fillStyle = gv;
+  o.fillRect(0, 0, w, h);
+  const gh = hz.fromLeft ? o.createLinearGradient(0, 0, w, 0) : o.createLinearGradient(w, 0, 0, 0);
+  gh.addColorStop(hz.a, '#000');
+  gh.addColorStop(hz.b, 'rgba(0,0,0,0)');
+  o.fillStyle = gh;
+  o.fillRect(0, 0, w, h);
+  c.drawImage(off, x, y);
 }
 
 // ─── pixels (mesmo desenho do PixelGrid do visor) ─────────────────────────
@@ -244,21 +342,26 @@ export async function renderStory(mix: Mixtape, { transparent = false } = {}): P
   const x0 = transparent ? pad : (W - DW) / 2;
   const y0 = transparent ? pad : (H - DH) / 2 - 40;
 
-  // teclas laterais (saem de baixo da casca)
+  // teclas laterais (saem de baixo da casca): cilindro de gel, mesmo .pp-sidekey
   const key = (side: 'l' | 'r', top: number, h: number) => {
     const kx = side === 'l' ? x0 - 1.3 * u : x0 + DW - 1.3 * u;
-    const g = c.createLinearGradient(kx, 0, kx + 2.6 * u, 0);
-    const dark = 'rgba(0,0,0,.14)';
-    const light = 'rgba(255,255,255,.4)';
-    g.addColorStop(0, side === 'l' ? dark : light);
-    g.addColorStop(0.45, 'rgba(0,0,0,0)');
-    g.addColorStop(1, side === 'l' ? light : dark);
-    rr(c, kx, y0 + top * u, 2.6 * u, h * u, side === 'l' ? [1.2 * u, 0, 0, 1.2 * u] : [0, 1.2 * u, 1.2 * u, 0]);
-    // mesma cor do play
-    c.fillStyle = f.accent;
-    c.fill();
+    const ky = y0 + top * u;
+    const kw = 2.6 * u;
+    const kh = h * u;
+    const g = side === 'l' ? c.createLinearGradient(kx, 0, kx + kw, 0) : c.createLinearGradient(kx + kw, 0, kx, 0);
+    g.addColorStop(0, f.accentLo);
+    g.addColorStop(0.2, blend(f.accent, '#ffffff', 0.45));
+    g.addColorStop(0.38, f.accent);
+    g.addColorStop(1, f.accent);
+    const e = { x: 1.3 * u, y: 2.6 * u };
+    const radii = side === 'l' ? [e, 0, 0, e] : [0, e, e, 0];
+    const shape: Shape = (gr) => c.roundRect(kx - gr, ky - gr, kw + 2 * gr, kh + 2 * gr, radii);
+    c.beginPath();
+    shape(0);
     c.fillStyle = g;
     c.fill();
+    insetShadow(c, shape, 0, -0.9 * u, 0.8 * u, -0.5 * u, alpha(f.accentLo, 0.7));
+    insetShadow(c, shape, 0, 0.9 * u, 0.8 * u, -0.5 * u, 'rgba(255,255,255,0.45)');
   };
   key('l', 20, 12);
   key('l', 34.5, 12);
@@ -311,53 +414,50 @@ export async function renderStory(mix: Mixtape, { transparent = false } = {}): P
     c.globalAlpha = 1;
     c.globalCompositeOperation = 'source-over';
 
-    // luz atravessando o gel atrás da roda
-    const glow = c.createRadialGradient(x0 + DW / 2, y0 + DH * 0.72, 0, x0 + DW / 2, y0 + DH * 0.72, DW * 0.75);
-    glow.addColorStop(0, a(f.bodyHi, 0.45));
-    glow.addColorStop(0.7, a(f.bodyHi, 0));
-    c.fillStyle = glow;
+    // .pp-gel: luz atravessando o gel (atrás da roda e no meio)
+    ellipseGradient(c, x0, y0, DW, DH, x0 + DW / 2, y0 + DH * 0.72, DW * 0.75, DH * 0.4, [
+      [0, a(f.bodyHi, 0.45)],
+      [0.7, a(f.bodyHi, 0)],
+    ]);
+    ellipseGradient(c, x0, y0, DW, DH, x0 + DW / 2, y0 + DH * 0.38, DW * 0.6, DH * 0.3, [
+      [0, a(f.bodyHi, 0.22)],
+      [0.7, a(f.bodyHi, 0)],
+    ]);
+    // sombras internas do gel, de baixo pra cima: faixa saturada, luz saindo embaixo, fio na aresta
+    const body = roundShape(c, x0, y0, DW, DH, R);
+    insetShadow(c, body, 0, 0, 4 * u, 2.4 * u, a(f.bodyLo, 0.38));
+    insetShadow(c, body, 0, -2.6 * u, 2.2 * u, -1.4 * u, blend(f.bodyHi, '#ffffff', 0.85));
+    insetShadow(c, body, 0, 0, 0, 0.5 * u, a(f.bodyHi, 0.7));
+    // parede interna da casca: degrau nítido com sombra pra dentro
+    c.save();
+    c.globalAlpha = 0.85;
+    const wi = 2.4 * u;
+    const bw = 0.3 * u;
+    rr(c, x0 + wi + bw / 2, y0 + wi + bw / 2, DW - 2 * wi - bw, DH - 2 * wi - bw, 5 * u - bw / 2);
+    c.strokeStyle = a(f.bodyHi, 0.75);
+    c.lineWidth = bw;
+    c.stroke();
+    insetShadow(c, roundShape(c, x0 + wi + bw, y0 + wi + bw, DW - 2 * (wi + bw), DH - 2 * (wi + bw), 5 * u - bw), 0.2 * u, 0.35 * u, 0.9 * u, 0, a(f.bodyLo, 0.45));
+    c.restore();
+    // ombro arredondado: a borda que encara a luz clareia, a oposta afunda
+    c.save();
+    c.beginPath();
+    c.roundRect(x0, y0, DW, DH, R);
+    c.roundRect(x0 + wi, y0 + wi, DW - 2 * wi, DH - 2 * wi, R - wi);
+    c.clip('evenodd');
+    const sh = cssGradient(c, x0, y0, DW, DH, 150);
+    sh.addColorStop(0, a(f.bodyHi, 0.7));
+    sh.addColorStop(0.3, a(f.bodyHi, 0.3));
+    sh.addColorStop(0.55, a(f.bodyHi, 0));
+    sh.addColorStop(0.55, a(f.bodyLo, 0));
+    sh.addColorStop(1, a(f.bodyLo, 0.4));
+    c.fillStyle = sh;
     c.fillRect(x0, y0, DW, DH);
-
-    // faixa mais saturada logo pra dentro da borda
-    c.filter = `blur(${2 * u}px)`;
-    rr(c, x0 + 2.4 * u, y0 + 2.4 * u, DW - 4.8 * u, DH - 4.8 * u, R - 2.4 * u);
-    c.strokeStyle = a(f.bodyLo, 0.38);
-    c.lineWidth = 3 * u;
-    c.stroke();
-    c.filter = 'none';
-    // parede grossa clareando a borda + fio de luz na aresta
-    rr(c, x0 + 0.8 * u, y0 + 0.8 * u, DW - 1.6 * u, DH - 1.6 * u, R - 0.8 * u);
-    c.strokeStyle = a(f.bodyHi, 0.34);
-    c.lineWidth = 1.6 * u;
-    c.stroke();
-    rr(c, x0 + 0.25 * u, y0 + 0.25 * u, DW - 0.5 * u, DH - 0.5 * u, R - 0.25 * u);
-    c.strokeStyle = a(f.bodyHi, 0.7);
-    c.lineWidth = 0.5 * u;
-    c.stroke();
-    // parede interna da casca
-    c.filter = `blur(${0.12 * u}px)`;
-    rr(c, x0 + 2.4 * u, y0 + 2.4 * u, DW - 4.8 * u, DH - 4.8 * u, 5 * u);
-    c.strokeStyle = a(f.bodyHi, 0.44);
-    c.lineWidth = 0.35 * u;
-    c.stroke();
-    c.filter = 'none';
-
-    // brilho molhado: alto, laterais e embaixo
-    const spot = (cx: number, cy: number, rx: number, ry: number, al: number) => {
-      c.save();
-      c.translate(x0 + cx * DW, y0 + cy * DH);
-      c.scale(rx * DW, ry * DH);
-      const g = c.createRadialGradient(0, 0, 0, 0, 0, 1);
-      g.addColorStop(0, `rgba(255,255,255,${al})`);
-      g.addColorStop(0.75, 'rgba(255,255,255,0)');
-      c.fillStyle = g;
-      c.fillRect(-1, -1, 2, 2);
-      c.restore();
-    };
-    spot(0.3, 0.019, 0.3, 0.024, 0.75);
-    spot(0.028, 0.34, 0.024, 0.26, 0.6);
-    spot(0.972, 0.6, 0.02, 0.14, 0.4);
-    spot(0.72, 0.976, 0.24, 0.026, 0.45);
+    c.restore();
+    // reflexo molhado: faixa nítida no ombro de cima à esquerda e outra menor embaixo à direita
+    const si = 1.05 * u;
+    shineBand(c, x0 + si, y0 + si, DW - 2 * si, DH - 2 * si, 6 * u, 1.15 * u, 0.62, { fromTop: true, a: 0.06, b: 0.58 }, { fromLeft: true, a: 0.08, b: 0.62 });
+    shineBand(c, x0 + si, y0 + si, DW - 2 * si, DH - 2 * si, 6 * u, 0.7 * u, 0.5, { fromTop: false, a: 0.04, b: 0.3 }, { fromLeft: false, a: 0.06, b: 0.4 });
     c.restore();
   }
   rim(c, x0, y0, DW, DH, 7 * u, 0.28 * u, 0.55);
@@ -366,6 +466,26 @@ export async function renderStory(mix: Mixtape, { transparent = false } = {}): P
   const lx = x0 + 5.5 * u;
   const ly = y0 + 5.5 * u;
   const lr = 5 * u;
+  // rebaixo do plástico em volta do visor e da roda (box-shadow de fora: só o anel, nunca por baixo da peça)
+  const seat = (sx: number, sy: number, sw: number, sh: number, r: number, round: boolean) => {
+    const path = (g: number) => {
+      if (round) {
+        c.moveTo(sx + sw + g, sy + sh / 2);
+        c.arc(sx + sw / 2, sy + sh / 2, sw / 2 + g, 0, Math.PI * 2);
+      } else c.roundRect(sx - g, sy - g, sw + 2 * g, sh + 2 * g, r + g);
+    };
+    for (const [g, col] of [
+      [1.15 * u, alpha(f.bodyHi, 0.8)],
+      [0.8 * u, alpha(f.bodyLo, 0.42)],
+    ] as const) {
+      c.beginPath();
+      path(g);
+      path(0);
+      c.fillStyle = col;
+      c.fill('evenodd');
+    }
+  };
+  seat(lx, ly, lcdW, lcdH, lr, false);
   c.save();
   rr(c, lx, ly, lcdW, lcdH, lr);
   c.fillStyle = f.lcdBg;
@@ -443,10 +563,22 @@ export async function renderStory(mix: Mixtape, { transparent = false } = {}): P
   const wcx = x0 + DW / 2;
   const wcy = ly + lcdH + 7 * u + wheelD / 2;
   const R = wheelD / 2;
+  seat(wcx - R, wcy - R, wheelD, wheelD, R, true);
+  // plástico leitoso: deixa passar um pouco da cor e do miolo do aparelho
+  const disc = circleShape(c, wcx, wcy, R);
+  c.save();
   c.beginPath();
-  c.arc(wcx, wcy, R, 0, Math.PI * 2);
-  c.fillStyle = f.wheel;
-  c.fill();
+  disc(0);
+  c.clip();
+  ellipseGradient(c, wcx - R, wcy - R, wheelD, wheelD, wcx - R + 0.3 * wheelD, wcy - R + 0.2 * wheelD, 1.2 * wheelD, 1.2 * wheelD, [
+    [0, blend(f.keyHi, f.wheel, 0.7, 0.88)],
+    [0.46, alpha(f.wheel, 0.8)],
+    [1, blend(f.keyLo, f.wheel, 0.38, 0.76)],
+  ]);
+  c.restore();
+  insetShadow(c, disc, 0, -1.2 * u, 2.4 * u, 0, alpha(f.keyLo, 0.45));
+  insetShadow(c, disc, 0, 0.9 * u, 1.4 * u, 0, 'rgba(255,255,255,0.55)');
+  insetShadow(c, disc, 0, 0, 0, 0.35 * u, alpha(f.body, 0.22));
   // ticks do anel
   c.save();
   c.strokeStyle = f.keyInk;
@@ -465,8 +597,17 @@ export async function renderStory(mix: Mixtape, { transparent = false } = {}): P
   rim(c, wcx - R, wcy - R, wheelD, wheelD, R, 0.5 * u);
   wheelIcons(c, wcx, wcy, R, u, f.keyInk);
 
-  // botão central
+  // botão central, numa bacia rasa (sombra em cima, luz embaixo)
   const cr = 11 * u;
+  const br = cr + 1.3 * u;
+  const bowl = c.createLinearGradient(0, wcy - br, 0, wcy + br);
+  bowl.addColorStop(0, alpha(f.keyLo, 0.7));
+  bowl.addColorStop(0.85, alpha(f.keyHi, 0.9));
+  c.beginPath();
+  c.arc(wcx, wcy, br, 0, Math.PI * 2);
+  c.fillStyle = bowl;
+  c.fill();
+  insetShadow(c, circleShape(c, wcx, wcy, br), 0, 0.35 * u, 0.7 * u, 0, alpha(f.keyLo, 0.6));
   c.beginPath();
   c.arc(wcx, wcy + 0.45 * u, cr, 0, Math.PI * 2);
   c.fillStyle = f.accentLo;

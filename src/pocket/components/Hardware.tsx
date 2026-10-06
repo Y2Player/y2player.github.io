@@ -302,6 +302,8 @@ export function Led({ on, pulse }: { on: boolean; pulse?: boolean }) {
 // ─── Botões laterais ───────────────────────────────────────────────────────
 // Teclas de borda, saindo de baixo da casca: volume à esquerda, luz à direita.
 // `repeat` dispara de novo enquanto segura (volume).
+// `hit`: no aparelho, a tecla visível fica embaixo da casca e o toque vai para
+// uma área invisível maior, por cima da borda, para o dedo não precisar mirar.
 
 export function SideKey({
   side,
@@ -309,12 +311,14 @@ export function SideKey({
   onPress,
   repeat,
   style,
+  hit,
 }: {
   side: 'left' | 'right';
   label: string;
   onPress?: () => void;
   repeat?: boolean;
   style?: CSSProperties;
+  hit?: CSSProperties;
 }) {
   const [down, setDown] = useState(false);
   const timer = useRef<number>();
@@ -323,35 +327,40 @@ export function SideKey({
     window.clearInterval(timer.current);
     setDown(false);
   };
-  return (
-    <button
-      className={`pp-sidekey is-${side} ${down ? 'is-down' : ''}`}
-      style={style}
-      aria-label={label}
-      onPointerDown={(e) => {
+  const handlers = {
+    onPointerDown: (e: React.PointerEvent<HTMLButtonElement>) => {
+      try {
         e.currentTarget.setPointerCapture(e.pointerId);
-        setDown(true);
+      } catch {}
+      setDown(true);
+      haptic('key');
+      onPress?.();
+      if (repeat) {
+        timer.current = window.setTimeout(() => {
+          timer.current = window.setInterval(() => {
+            haptic('tick');
+            onPress?.();
+          }, 110);
+        }, 380);
+      }
+    },
+    onPointerUp: stop,
+    onPointerCancel: stop,
+    onClick: (e: React.MouseEvent) => {
+      // só teclado (detail 0); toques já foram tratados no pointerdown
+      if (e.detail === 0) {
         haptic('key');
         onPress?.();
-        if (repeat) {
-          timer.current = window.setTimeout(() => {
-            timer.current = window.setInterval(() => {
-              haptic('tick');
-              onPress?.();
-            }, 110);
-          }, 380);
-        }
-      }}
-      onPointerUp={stop}
-      onPointerCancel={stop}
-      onClick={(e) => {
-        // só teclado (detail 0); toques já foram tratados no pointerdown
-        if (e.detail === 0) {
-          haptic('key');
-          onPress?.();
-        }
-      }}
-    />
+      }
+    },
+  };
+  const cls = `pp-sidekey is-${side} ${down ? 'is-down' : ''}`;
+  if (!hit) return <button className={cls} style={style} aria-label={label} {...handlers} />;
+  return (
+    <>
+      <button className={`pp-sidekey-hit is-${side}`} style={hit} aria-label={label} {...handlers} />
+      <span className={cls} style={style} aria-hidden />
+    </>
   );
 }
 
@@ -409,13 +418,35 @@ export function Device(p: DeviceProps) {
 
   return (
     <div className={`pp-shell ${p.className ?? ''}`} style={{ ...materialVars(p.finish), ...p.style }}>
-      <SideKey side="left" label="Aumentar volume" repeat onPress={() => nudge(VOL_STEP)} style={{ top: '20cqw', height: '12cqw' }} />
-      <SideKey side="left" label="Diminuir volume" repeat onPress={() => nudge(-VOL_STEP)} style={{ top: '34.5cqw', height: '12cqw' }} />
-      <SideKey side="right" label="Luz do visor" onPress={() => p.onLight?.(!lit.current)} style={{ top: '19cqw', height: '15cqw' }} />
+      {/* área de toque: 1,2cqw além da tecla em cima e embaixo (sem invadir a vizinha) e da borda até perto do visor */}
+      <SideKey
+        side="left"
+        label="Aumentar volume"
+        repeat
+        onPress={() => nudge(VOL_STEP)}
+        style={{ top: '20cqw', height: '12cqw' }}
+        hit={{ top: '18.8cqw', height: '14.4cqw' }}
+      />
+      <SideKey
+        side="left"
+        label="Diminuir volume"
+        repeat
+        onPress={() => nudge(-VOL_STEP)}
+        style={{ top: '34.5cqw', height: '12cqw' }}
+        hit={{ top: '33.3cqw', height: '14.4cqw' }}
+      />
+      <SideKey
+        side="right"
+        label="Luz do visor"
+        onPress={() => p.onLight?.(!lit.current)}
+        style={{ top: '19cqw', height: '15cqw' }}
+        hit={{ top: '16.5cqw', height: '20cqw' }}
+      />
 
       <div className={`pp-device ${p.framed ? 'is-framed' : ''}`}>
         <Internals />
         <div className="pp-gel" />
+        <div className="pp-shine" />
         <div className="pp-bezel">
           {p.screen}
           <div className="pp-glass" />

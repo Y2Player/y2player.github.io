@@ -146,23 +146,72 @@
   pointer-events: none;
   box-shadow:
     inset 0 0 0 0.5cqw color-mix(in srgb, var(--body-hi) 70%, transparent),
-    inset 0 0 0 1.6cqw color-mix(in srgb, var(--body-hi) 34%, transparent),
+    /* a luz que entra no alto atravessa a casca e sai acesa na aresta de baixo */
+    inset 0 -2.6cqw 2.2cqw -1.4cqw color-mix(in srgb, var(--body-hi) 85%, #fff),
     inset 0 0 4cqw 2.4cqw color-mix(in srgb, var(--body-lo) 38%, transparent);
   background:
-    radial-gradient(30% 2.4% at 30% 1.9%, rgba(255, 255, 255, 0.75), transparent 75%),
-    radial-gradient(2.4% 26% at 2.8% 34%, rgba(255, 255, 255, 0.6), transparent 75%),
-    radial-gradient(2% 14% at 97.2% 60%, rgba(255, 255, 255, 0.4), transparent 75%),
-    radial-gradient(24% 2.6% at 72% 97.6%, rgba(255, 255, 255, 0.45), transparent 75%),
-    radial-gradient(75% 40% at 50% 72%, color-mix(in srgb, var(--body-hi) 45%, transparent), transparent 70%);
+    radial-gradient(75% 40% at 50% 72%, color-mix(in srgb, var(--body-hi) 45%, transparent), transparent 70%),
+    radial-gradient(60% 30% at 50% 38%, color-mix(in srgb, var(--body-hi) 22%, transparent), transparent 70%);
+}
+/* parede interna da casca: um degrau nítido, aceso de um lado e escuro do outro */
+/* ombro arredondado da casca: a borda que encara a luz clareia, a do lado oposto fica mais funda */
+.pp-gel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2.4cqw;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--body-hi) 70%, transparent) 0%,
+    color-mix(in srgb, var(--body-hi) 30%, transparent) 30%,
+    transparent 55%,
+    color-mix(in srgb, var(--body-lo) 40%, transparent) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
 }
 .pp-gel::before {
   content: '';
   position: absolute;
   inset: 2.4cqw;
   border-radius: 5cqw;
-  border: 0.35cqw solid color-mix(in srgb, var(--body-hi) 55%, transparent);
-  filter: blur(0.12cqw);
-  opacity: 0.8;
+  border: 0.3cqw solid color-mix(in srgb, var(--body-hi) 75%, transparent);
+  box-shadow: inset 0.2cqw 0.35cqw 0.9cqw color-mix(in srgb, var(--body-lo) 45%, transparent);
+  opacity: 0.85;
+}
+
+/* Reflexo molhado: faixas nítidas que acompanham o ombro curvo da casca.
+   Uma grande no canto de cima à esquerda (de onde vem a luz) e uma menor
+   embaixo à direita, onde a luz sai. Sem borrão: brilho de gel é recortado. */
+.pp-shine {
+  position: absolute;
+  inset: 1.05cqw;
+  z-index: -1;
+  border-radius: 6cqw;
+  pointer-events: none;
+  border: 1.15cqw solid transparent;
+  border-top-color: rgba(255, 255, 255, 0.62);
+  border-left-color: rgba(255, 255, 255, 0.62);
+  /* acende no canto e vai sumindo pela lateral (até a metade) e pelo topo (até o meio) */
+  -webkit-mask: linear-gradient(180deg, #000 6%, transparent 58%), linear-gradient(90deg, #000 8%, transparent 62%);
+  -webkit-mask-composite: source-in;
+  mask: linear-gradient(180deg, #000 6%, transparent 58%), linear-gradient(90deg, #000 8%, transparent 62%);
+  mask-composite: intersect;
+}
+.pp-shine::after {
+  content: '';
+  position: absolute;
+  inset: -1.15cqw;
+  border-radius: inherit;
+  border: 0.7cqw solid transparent;
+  border-bottom-color: rgba(255, 255, 255, 0.5);
+  border-right-color: rgba(255, 255, 255, 0.5);
+  -webkit-mask: linear-gradient(0deg, #000 4%, transparent 30%), linear-gradient(270deg, #000 6%, transparent 40%);
+  -webkit-mask-composite: source-in;
+  mask: linear-gradient(0deg, #000 4%, transparent 30%), linear-gradient(270deg, #000 6%, transparent 40%);
+  mask-composite: intersect;
 }
 /* grão do policarbonato */
 .pp-device::after {
@@ -190,6 +239,10 @@
 .pp-bezel {
   position: relative;
   border-radius: 5cqw;
+  /* rebaixo do plástico em volta do visor: canaleta mais funda e o lábio aceso da borda do corte */
+  box-shadow:
+    0 0 0 0.8cqw color-mix(in srgb, var(--body-lo) 42%, transparent),
+    0 0 0 1.15cqw color-mix(in srgb, var(--body-hi) 80%, transparent);
 }
 .pp-glass {
   position: absolute;
@@ -466,6 +519,10 @@
   width: 62cqw;
   aspect-ratio: 1;
   border-radius: 50%;
+  /* mesmo rebaixo do visor */
+  box-shadow:
+    0 0 0 0.8cqw color-mix(in srgb, var(--body-lo) 42%, transparent),
+    0 0 0 1.15cqw color-mix(in srgb, var(--body-hi) 80%, transparent);
   touch-action: none;
   perspective: 60cqw;
   cursor: grab;
@@ -478,7 +535,18 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: var(--ctrl-surface);
+  /* plástico leitoso: a luz pega no alto à esquerda e a borda puxa um pouco da cor do aparelho */
+  background: radial-gradient(
+    120% 120% at 30% 20%,
+    color-mix(in srgb, color-mix(in srgb, var(--key-hi) 70%, var(--ctrl-surface)) 88%, transparent) 0%,
+    color-mix(in srgb, var(--ctrl-surface) 80%, transparent) 46%,
+    color-mix(in srgb, color-mix(in srgb, var(--key-lo) 38%, var(--ctrl-surface)) 76%, transparent) 100%
+  );
+  /* leitoso: deixa passar um pouco da cor e do miolo do aparelho */
+  box-shadow:
+    inset 0 0 0 0.35cqw color-mix(in srgb, var(--body) 22%, transparent),
+    inset 0 0.9cqw 1.4cqw rgba(255, 255, 255, 0.55),
+    inset 0 -1.2cqw 2.4cqw color-mix(in srgb, var(--key-lo) 45%, transparent);
   transition: transform 110ms cubic-bezier(0.2, 0.8, 0.2, 1);
   transform-style: preserve-3d;
 }
@@ -570,6 +638,19 @@
   margin: -11cqw 0 0 -11cqw;
   border-radius: 50%;
 }
+/* bacia rasa onde o play assenta: sombra em cima, luz embaixo */
+.pp-center-seat::before {
+  content: '';
+  position: absolute;
+  inset: -1.3cqw;
+  border-radius: 50%;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--key-lo) 70%, transparent),
+    color-mix(in srgb, var(--key-hi) 90%, transparent) 85%
+  );
+  box-shadow: inset 0 0.35cqw 0.7cqw color-mix(in srgb, var(--key-lo) 60%, transparent);
+}
 .pp-center {
   position: absolute;
   inset: 0;
@@ -625,19 +706,33 @@
   height: 13cqw;
   border: 0;
   padding: 0;
-  /* mesma goma do play: cor de sinal com luz na aresta de fora */
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.14), transparent 45%, rgba(255, 255, 255, 0.4)), var(--accent);
-  box-shadow: inset 0 0 0 0.2cqw color-mix(in srgb, var(--accent-lo) 45%, transparent);
+  /* mesma goma do play: cilindro de gel com o brilho correndo no comprimento da tecla */
+  background: linear-gradient(
+    90deg,
+    var(--accent-lo) 0%,
+    color-mix(in srgb, var(--accent) 45%, #fff) 20%,
+    var(--accent) 38%,
+    var(--accent) 100%
+  );
+  box-shadow:
+    inset 0 0.9cqw 0.8cqw -0.5cqw rgba(255, 255, 255, 0.45),
+    inset 0 -0.9cqw 0.8cqw -0.5cqw color-mix(in srgb, var(--accent-lo) 70%, transparent);
   cursor: pointer;
   touch-action: none;
   transition: transform 90ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .pp-sidekey.is-left {
-  border-radius: 1.2cqw 0 0 1.2cqw;
+  border-radius: 1.3cqw 0 0 1.3cqw / 2.6cqw 0 0 2.6cqw;
 }
 .pp-sidekey.is-right {
-  border-radius: 0 1.2cqw 1.2cqw 0;
-  background: linear-gradient(270deg, rgba(0, 0, 0, 0.14), transparent 45%, rgba(255, 255, 255, 0.4)), var(--accent);
+  border-radius: 0 1.3cqw 1.3cqw 0 / 0 2.6cqw 2.6cqw 0;
+  background: linear-gradient(
+    270deg,
+    var(--accent-lo) 0%,
+    color-mix(in srgb, var(--accent) 45%, #fff) 20%,
+    var(--accent) 38%,
+    var(--accent) 100%
+  );
 }
 .pp-sidekey::after {
   content: '';
@@ -655,6 +750,32 @@
 .pp-shell > .pp-sidekey {
   position: absolute;
   z-index: 0;
+  pointer-events: none;
+}
+/* área de toque das teclas no aparelho: invisível, por cima da borda da casca */
+.pp-sidekey-hit {
+  position: absolute;
+  z-index: 2;
+  width: 9cqw;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.pp-sidekey-hit.is-left {
+  left: -4cqw;
+}
+.pp-sidekey-hit.is-right {
+  right: -4cqw;
+}
+.pp-sidekey-hit:focus-visible {
+  outline: none;
+}
+.pp-sidekey-hit:focus-visible + .pp-sidekey {
+  outline: 0.6cqw solid var(--led);
+  outline-offset: 0.6cqw;
 }
 .pp-shell > .pp-sidekey.is-left {
   left: -1.3cqw;
