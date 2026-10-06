@@ -278,9 +278,9 @@ export function CreateWizard() {
         {/* aparelho: fica com a altura que sobra e encolhe pra caber */}
         <div className="flex min-h-0 flex-1 flex-col lg:h-[100dvh]">
           <header className="flex h-12 flex-none items-center justify-between px-5 lg:h-14 lg:px-0">
-            {/* voltar do topo: só na primeira etapa (ou já gravado), volta pro mix de onde
-                a pessoa veio pelo +, ou pra home. Do passo 2 em diante o voltar fica na barra de baixo. */}
-            {(step === 0 || link) && (
+            {/* voltar do topo: só na primeira etapa, volta pro mix de onde a pessoa veio pelo +,
+                ou pra home. Do passo 2 em diante o voltar fica na barra de baixo; depois de gravado, não tem. */}
+            {step === 0 && (
               <a
                 href="#/"
                 className="pp-spec"
@@ -374,7 +374,8 @@ export function CreateWizard() {
             )}
             {step === 2 && link && (
               <>
-                <a className="pp-btn is-ghost" href={link.slice(link.indexOf('#'))}>
+                {/* abre o próprio link gravado (curto ou longo), como quem recebe vai abrir */}
+                <a className="pp-btn is-ghost" href={link}>
                   Testar
                 </a>
                 <button className="pp-btn is-gel flex-1" onClick={copy}>
