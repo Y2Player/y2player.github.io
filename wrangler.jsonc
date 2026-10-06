@@ -1,0 +1,24 @@
+// Site + encurtador no plano grátis da Cloudflare (sem cartão: passou da cota, para; nunca cobra).
+{
+  "name": "y2player",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist",
+    // y2player.com/k7Hq2 não é arquivo: devolve o app, que lê o código do endereço
+    "not_found_handling": "single-page-application",
+    // só a API passa pelo Worker; os arquivos do site não gastam cota
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "y2player",
+      "database_id": "f29d4178-3286-4197-94bd-a3d93efa55ec"
+    }
+  ],
+  "routes": [
+    { "pattern": "y2player.com", "custom_domain": true },
+    { "pattern": "www.y2player.com", "custom_domain": true }
+  ]
+}

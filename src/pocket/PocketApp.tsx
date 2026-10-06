@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState, type ComponentType } from 'react';
 import './pocket.css';
-import { decodeMixtape, decodeShort, DEMO, type Mixtape } from './lib/mixtape';
+import { decodeMixtape, decodeShort, DEMO, loadShortCode, SHORT_PATH, type Mixtape } from './lib/mixtape';
 import { PlayerScreen } from './screens/Player';
 import { Landing } from './screens/Landing';
 import { CreateWizard } from './screens/Create';
@@ -25,22 +25,25 @@ function useHash() {
   return hash.replace(/^#/, '') || '/';
 }
 
-// Link de mixtape: formato 2 (curto) é qualquer hash que não começa com "/";
+// Link de mixtape: formato 3 é o endereço y2player.com/k7Hq2 (sem hash);
+// formato 2 é qualquer hash que não começa com "/";
 // o formato 1 (#/m/…) segue abrindo para links já compartilhados.
 function useMixtape(route: string) {
-  const [state, setState] = useState<{ route: string; mix: Mixtape | null } | null>(null);
-  const isV1 = route.startsWith('/m/');
-  const isV2 = !route.startsWith('/');
+  const [state, setState] = useState<{ route: string; mix: Mixtape | null | 'unavailable' } | null>(null);
+  const code = !location.hash ? location.pathname.match(SHORT_PATH)?.[1] : undefined;
+  const key = code ? `/${code}` : route;
+  const isV1 = !code && route.startsWith('/m/');
+  const isV2 = !code && !route.startsWith('/');
   useEffect(() => {
-    if (!isV2) return;
+    if (!code && !isV2) return;
     let alive = true;
-    decodeShort(route).then((mix) => alive && setState({ route, mix }));
+    (code ? loadShortCode(code) : decodeShort(route)).then((mix) => alive && setState({ route: key, mix }));
     return () => {
       alive = false;
     };
-  }, [route, isV2]);
+  }, [key, code, route, isV2]);
   if (isV1) return { is: true, ready: true, mix: decodeMixtape(route.slice(3)) };
-  if (isV2) return { is: true, ready: state?.route === route, mix: state?.route === route ? state.mix : null };
+  if (code || isV2) return { is: true, ready: state?.route === key, mix: state?.route === key ? state.mix : null };
   return { is: false, ready: true, mix: null };
 }
 
@@ -50,6 +53,7 @@ export default function PocketApp() {
 
   if (link.is) {
     if (!link.ready) return <div className="pp-root pp-stage" />;
+    if (link.mix === 'unavailable') return <Unavailable />;
     if (!link.mix) return <Broken />;
     return <PlayerScreen key={route} mix={link.mix} />;
   }
@@ -90,6 +94,29 @@ function Broken() {
         <a href="#/criar" className="pp-btn mt-8">
           Fazer a minha
         </a>
+      </div>
+    </div>
+  );
+}
+
+// Link curto que o servidor não conseguiu entregar agora (fora do ar ou cota do dia
+// esgotada). O mix continua guardado; a cota grátis zera às 21h de Brasília.
+// TODO(copy): texto provisório, aguardando aprovação do William.
+function Unavailable() {
+  useEffect(() => {
+    document.title = 'Y2Player';
+  }, []);
+  return (
+    <div className="pp-root pp-stage relative grid place-items-center px-6 text-center">
+      <HomeBar className="h-12" />
+      <div>
+        <h1 className="text-2xl font-medium">Muita gente ouvindo agora</h1>
+        <p className="mt-2" style={{ color: 'var(--ink-2)' }}>
+          Seu mix tá guardadinho. Tenta de novo daqui a pouco.
+        </p>
+        <button type="button" onClick={() => location.reload()} className="pp-btn mt-8">
+          Tentar de novo
+        </button>
       </div>
     </div>
   );

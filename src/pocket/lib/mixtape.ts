@@ -182,9 +182,57 @@ export function placeholderTrack(id: string, i: number): Track {
   return { id, title: `Faixa ${String(i + 1).padStart(2, '0')}`, author: 'YouTube' };
 }
 
+// ─── Link curtíssimo (formato 3) ───────────────────────────────────────────
+// O mix fica guardado no y2player.com e o link leva só um código: y2player.com/k7Hq2.
+// O que fica guardado é o próprio texto do formato 2. Se o servidor não responder
+// (fora do ar, cota do dia esgotada, outro endereço), o link sai no formato 2,
+// que abre sem servidor nenhum.
+
+export const SHORT_PATH = /^\/([2-9a-km-zA-HJ-NP-Z]{5})$/;
+const cacheKey = (code: string) => `y2p:mix:${code}`;
+
+function remember(code: string, hash: string) {
+  try {
+    localStorage.setItem(cacheKey(code), hash);
+  } catch {
+    // sem armazenamento local, o mix só não reabre offline
+  }
+}
+
 export async function shareUrl(m: Mixtape) {
-  const base = `${location.origin}${location.pathname}`;
-  return `${base}#${await encodeShort(m)}`;
+  const hash = await encodeShort(m);
+  const long = `${location.origin}${location.pathname}#${hash}`;
+  try {
+    const res = await fetch('/api/mix', { method: 'POST', body: hash });
+    const code = res.ok ? (await res.text()).trim() : '';
+    if (!SHORT_PATH.test(`/${code}`)) return long;
+    remember(code, hash);
+    return `${location.origin}/${code}`;
+  } catch {
+    return long;
+  }
+}
+
+// null: o código não existe. 'unavailable': o servidor não respondeu agora.
+export async function loadShortCode(code: string): Promise<Mixtape | null | 'unavailable'> {
+  let hash: string | null = null;
+  try {
+    hash = localStorage.getItem(cacheKey(code));
+  } catch {
+    // segue para o servidor
+  }
+  if (!hash) {
+    try {
+      const res = await fetch(`/api/mix/${code}`);
+      if (res.status === 404) return null;
+      if (!res.ok) return 'unavailable';
+      hash = (await res.text()).trim();
+      remember(code, hash);
+    } catch {
+      return 'unavailable';
+    }
+  }
+  return decodeShort(hash);
 }
 
 // ─── Demo ──────────────────────────────────────────────────────────────────

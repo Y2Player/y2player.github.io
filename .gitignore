@@ -21,3 +21,4 @@ src/pocket/screens/Assets.tsx
 
 # registro interno de decisões de copy
 docs/
+.wrangler/
