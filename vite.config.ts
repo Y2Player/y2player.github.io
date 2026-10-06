@@ -12,7 +12,8 @@ export default defineConfig({
     host: true,
     // em desenvolvimento a busca usa o servidor do site no ar (a chave do YouTube fica lá)
     proxy: {
-      '/api/search': { target: 'https://y2player.com', changeOrigin: true }
+      '/api/search': { target: 'https://y2player.com', changeOrigin: true },
+      '/api/suggest': { target: 'https://y2player.com', changeOrigin: true }
     }
   }
 });

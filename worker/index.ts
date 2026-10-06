@@ -42,8 +42,44 @@ function unescapeHtml(s: string) {
 
 // só o próprio site usa a busca (o navegador manda de qual página veio a chamada)
 const SEARCH_FROM = new Set(['y2player.com', 'www.y2player.com', 'localhost', '127.0.0.1']);
-// buscas novas por pessoa por dia: um mix tem até 5 músicas, sobra folga pra errar o nome
-const SEARCH_PER_DAY = 20;
+// buscas novas por pessoa por dia: um mix tem até 5 músicas, sobra folga pra errar o nome.
+// As sugestões (abaixo) não contam: elas não gastam a cota do YouTube.
+const SEARCH_PER_DAY = 50;
+
+// vem de uma página do próprio site?
+function fromSite(req: Request) {
+  try {
+    return SEARCH_FROM.has(new URL(req.headers.get('referer') ?? '').hostname);
+  } catch {
+    return false;
+  }
+}
+
+// Sugestões enquanto a pessoa digita, as mesmas da caixa de busca do YouTube
+// (corrigem erro de digitação). Endpoint público do Google, sem chave e sem cota;
+// não é uma API oficial, então se um dia parar, a busca normal continua funcionando.
+async function suggest(req: Request, ctx: ExecutionContext) {
+  const url = new URL(req.url);
+  if (!fromSite(req)) return json({ error: 'forbidden' }, 403);
+  const q = (url.searchParams.get('q') ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
+  if (!q || q.length > 100) return json({ suggestions: [] });
+  const cache = caches.default;
+  const key = new Request(`${url.origin}/api/suggest?q=${encodeURIComponent(q)}`);
+  const hit = await cache.match(key);
+  if (hit) return hit;
+  const api = new URL('https://suggestqueries.google.com/complete/search');
+  api.search = new URLSearchParams({ client: 'firefox', ds: 'yt', hl: 'pt-BR', gl: 'BR', q }).toString();
+  try {
+    const r = await fetch(api);
+    const data = (await r.json()) as [string, string[]];
+    const suggestions = (Array.isArray(data?.[1]) ? data[1] : []).filter((x) => typeof x === 'string').slice(0, 6);
+    const res = json({ suggestions }, 200, { 'cache-control': 'public, max-age=86400' });
+    ctx.waitUntil(cache.put(key, res.clone()));
+    return res;
+  } catch {
+    return json({ suggestions: [] });
+  }
+}
 
 async function sha256(text: string) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
@@ -66,16 +102,10 @@ async function overLimit(req: Request, env: Env, ctx: ExecutionContext) {
 
 // Busca no YouTube: a cota grátis é de 100 buscas por dia para o site todo, então a mesma
 // busca fica guardada no cache da Cloudflare por uma semana e não gasta cota de novo.
-// Só vídeos que tocam fora do YouTube e no Brasil (os que o player consegue tocar).
+// Só vídeos que tocam fora do YouTube (os que o player consegue tocar), com o Brasil como região.
 async function search(req: Request, env: Env, ctx: ExecutionContext) {
   const url = new URL(req.url);
-  let from = '';
-  try {
-    from = new URL(req.headers.get('referer') ?? '').hostname;
-  } catch {
-    /* sem página de origem */
-  }
-  if (!SEARCH_FROM.has(from)) return json({ error: 'forbidden' }, 403);
+  if (!fromSite(req)) return json({ error: 'forbidden' }, 403);
   const q = (url.searchParams.get('q') ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
   if (!q || q.length > 100) return json({ error: 'query' }, 400);
   if (!env.YOUTUBE_KEY) return json({ error: 'off' }, 503);
@@ -92,7 +122,6 @@ async function search(req: Request, env: Env, ctx: ExecutionContext) {
     part: 'snippet',
     type: 'video',
     videoEmbeddable: 'true',
-    videoSyndicated: 'true',
     regionCode: 'BR',
     maxResults: '6',
     q,
@@ -139,6 +168,7 @@ export default {
     const url = new URL(req.url);
 
     if (url.pathname === '/api/search' && req.method === 'GET') return search(req, env, ctx);
+    if (url.pathname === '/api/suggest' && req.method === 'GET') return suggest(req, ctx);
 
     if (url.pathname === '/api/mix' && req.method === 'POST') {
       const payload = (await req.text()).trim();
