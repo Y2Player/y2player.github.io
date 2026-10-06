@@ -243,24 +243,23 @@ export function CreateWizard() {
         {/* aparelho: fica com a altura que sobra e encolhe pra caber */}
         <div className="flex min-h-0 flex-1 flex-col lg:h-[100dvh]">
           <header className="flex h-12 flex-none items-center justify-between px-5 lg:h-14 lg:px-0">
-            {/* o único voltar: volta uma etapa; na primeira (ou já gravado), volta pro mix
-                de onde a pessoa veio pelo +, ou pra home */}
-            <a
-              href="#/"
-              className="pp-spec"
-              style={{ color: 'var(--ink-2)' }}
-              onClick={(e) => {
-                if (step > 0 && !link) {
-                  e.preventDefault();
-                  setStep((s) => s - 1);
-                } else if (fromMix) {
-                  e.preventDefault();
-                  history.back();
-                }
-              }}
-            >
-              ← Voltar
-            </a>
+            {/* voltar do topo: só na primeira etapa (ou já gravado), volta pro mix de onde
+                a pessoa veio pelo +, ou pra home. Do passo 2 em diante o voltar fica na barra de baixo. */}
+            {(step === 0 || link) && (
+              <a
+                href="#/"
+                className="pp-spec"
+                style={{ color: 'var(--ink-2)' }}
+                onClick={(e) => {
+                  if (fromMix) {
+                    e.preventDefault();
+                    history.back();
+                  }
+                }}
+              >
+                ← Voltar
+              </a>
+            )}
           </header>
           <div className="pp-fit flex-1 pb-3 lg:pb-14">
             <div className="pp-cq">{device}</div>
@@ -322,6 +321,11 @@ export function CreateWizard() {
 
           {/* barra de ação: sempre no pé da folha */}
           <div className="flex flex-none gap-3 pt-4 lg:pt-6">
+            {step > 0 && !link && (
+              <button className="pp-btn is-ghost" onClick={() => (haptic('key'), setStep((s) => s - 1))}>
+                Voltar
+              </button>
+            )}
             {step < 2 && (
               <button className="pp-btn is-gel flex-1" disabled={!canNext} onClick={() => (haptic('key'), setStep((s) => s + 1))}>
                 {step === 1 && !canNext ? tracksCta : 'Avançar'}
@@ -475,9 +479,6 @@ function StepTracks({
   };
   return (
     <>
-      <p className="mt-2 text-[15px] leading-[1.5]" style={{ color: 'var(--ink-2)' }}>
-        Cola o link do youtube.
-      </p>
       <div className="mt-4 flex flex-col gap-2">
         {slots.map((s, i) => (
           <div
