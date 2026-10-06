@@ -13,7 +13,8 @@
   --line: rgba(29, 29, 27, 0.12);
   --signal: #ff5a1f;
   --ink-contrast: #f6f5f1;
-  --stage-bg: #e6e6e6;
+  /* fundo da página = fundo padrão do aparelho (claro ou escuro), o mesmo da barra do navegador */
+  --stage-bg: Canvas;
   color-scheme: light dark;
   /* Helvetica Neue em tudo fora do visor (o LCD tem as fontes de pixel dele) */
   --font-ui: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -43,7 +44,6 @@
     --paper-2: #27282c;
     --line: rgba(255, 255, 255, 0.12);
     --ink-contrast: #141416;
-    --stage-bg: #141416;
   }
 }
 
@@ -89,10 +89,14 @@
   --rim: 0.4cqw;
 }
 
-/* Casca: segura o corpo e as teclas laterais que saem de baixo dele. */
+/* Casca: segura o corpo e as teclas laterais que saem de baixo dele.
+   Nada nela seleciona nem abre menu no toque longo (segurar o volume no iPhone selecionava a página). */
 .pp-shell {
   position: relative;
   width: 100cqw;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   /* um só material leitoso para roda e teclas */
   --ctrl-surface: var(--wheel);
 }
