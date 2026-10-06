@@ -278,23 +278,7 @@ export function CreateWizard() {
         {/* aparelho: fica com a altura que sobra e encolhe pra caber */}
         <div className="flex min-h-0 flex-1 flex-col lg:h-[100dvh]">
           <header className="flex h-12 flex-none items-center justify-between px-5 lg:h-14 lg:px-0">
-            {/* voltar do topo: só na primeira etapa, volta pro mix de onde a pessoa veio pelo +,
-                ou pra home. Do passo 2 em diante o voltar fica na barra de baixo; depois de gravado, não tem. */}
-            {step === 0 && (
-              <a
-                href="#/"
-                className="pp-spec"
-                style={{ color: 'var(--ink-2)' }}
-                onClick={(e) => {
-                  if (fromMix) {
-                    e.preventDefault();
-                    history.back();
-                  }
-                }}
-              >
-                ← Voltar
-              </a>
-            )}
+            {/* o voltar fica na barra de baixo, em todas as etapas; o topo só guarda o espaço */}
           </header>
           <div className="pp-fit flex-1 pb-3 lg:pb-14">
             <div className="pp-cq">{device}</div>
@@ -357,8 +341,17 @@ export function CreateWizard() {
 
           {/* barra de ação: sempre no pé da folha */}
           <div className="flex flex-none gap-3 pt-4 lg:pt-6">
-            {step > 0 && !link && (
-              <button className="pp-btn is-ghost" onClick={() => (haptic('key'), setStep((s) => s - 1))}>
+            {!link && (
+              <button
+                className="pp-btn is-ghost"
+                onClick={() => {
+                  haptic('key');
+                  // na primeira etapa volta pro mix de onde a pessoa veio pelo +, ou pra home
+                  if (step > 0) setStep((s) => s - 1);
+                  else if (fromMix) history.back();
+                  else location.hash = '#/';
+                }}
+              >
                 Voltar
               </button>
             )}
