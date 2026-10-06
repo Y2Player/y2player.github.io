@@ -298,7 +298,8 @@ export function CreateWizard() {
     <Device
       finish={finish}
       lit={lit}
-      playing={playSlot ? realPlaying : previewPlaying}
+      // o botão do meio só mostra pausa quando tem música tocando de verdade
+      playing={realPlaying}
       volume={vol}
       onVolume={(v) => {
         setVol(v);
